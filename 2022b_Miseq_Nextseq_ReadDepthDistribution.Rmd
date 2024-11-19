@@ -1,0 +1,159 @@
+---
+title: "2022b Miseq v Nextseq Rarefaction Curves"
+author: "Brooke Benz"
+date: "2024-07-19"
+output:
+  html_notebook: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
+  pdf_document: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+```{r}
+##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
+library(phyloseq); packageVersion("phyloseq") #1.38.0
+library(vegan); packageVersion("vegan") #2.6.4
+library(dplyr)
+library(ggplot2)
+library(tibble)
+#install.packages("moments")
+library(moments)
+library(scales)
+
+## Loading functions and setting path
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Rarefaction Curves"
+
+sxl_color <- c("#516888", "#C9DACA", "#F3AE6D") # colors from nationalparkcolors package
+
+#set seed
+#runif(1, min = 0, max = 1000)
+set.seed(617)
+```
+
+## Loading in PS Objects
+```{r}
+ps_22b_msvns <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_msvns
+```
+## Read Depth
+```{r}
+# Extract the read counts from the phyloseq object
+read_counts <- sample_sums(ps_22b_msvns)
+
+# Create a data frame for plotting
+df <- data.frame(Sample = names(read_counts), ReadCounts = read_counts)
+meta_msvns <- sample_data(ps_22b_msvns)  # Extract the metadata
+
+# Combine read counts with the metadata
+df <- data.frame(Sample = names(read_counts), ReadCounts = read_counts, SxL = meta_msvns$SxL)
+```
+
+```{r}
+# Extract the metadata (sample data) and get the treatment information
+sam_data <- data.frame(sample_data(ps_22b_msvns))
+
+read_depth_df <- data.frame(Sample = names(read_counts), ReadCounts = read_counts)
+read_depth_df <- merge(read_depth_df, sam_data, by.x = "Sample", by.y = "row.names")
+```
+
+### Adding Method of Moments Stats to Figures
+```{r}
+summary_stats <- read_depth_df %>%
+  group_by(SxL) %>%
+  summarize(
+    Mean = mean(ReadCounts),
+    Variance = var(ReadCounts),
+    Skewness = skewness(ReadCounts)
+  )
+summary_stats
+
+# Use scientific notation for mean and variance
+summary_stats <- summary_stats %>%
+  mutate(label = paste0("Mean: ", scientific(Mean, digits = 2), 
+                        "\nVariance: ", scientific(Variance, digits = 2),
+                        "\nSkewness: ", round(Skewness, 2)))
+
+# Merge the summary_stats back with the read_depth_df for plotting
+read_depth_df <- read_depth_df %>%
+  left_join(summary_stats, by = "SxL")
+
+# Plot with text labels showing the statistics
+ggplot(read_depth_df, aes(x = reorder(Sample, -ReadCounts), y = ReadCounts, fill = SxL)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual("", values = sxl_color) +
+  xlab("Samples") +
+  ylab("Read Depth") +
+  ggtitle("Uniformity of Read Depth") +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),  # Remove X-axis labels
+        axis.ticks.x = element_blank()) + # Remove X-axis ticks
+  theme(legend.key.width = unit(.6, "cm"), axis.title = element_text(size = 12),
+         legend.text=element_text(size=10), legend.title=element_text(size=12),
+         legend.background = element_rect(colour = NA, fill = NA),
+         legend.position = "bottom") +
+  facet_wrap(~ SxL, scales = "free_x") +  # Separate plots for each SxL value
+  geom_text(data = summary_stats, aes(x = Inf, y = Inf, label = label),
+            hjust = 1.1, vjust = 1.1, size = 3.5, inherit.aes = FALSE)
+ggsave("20240905_2022Plate1_MiseqvNextseq_readdepth_persample_stats.png", height = 8, width = 15)
+```
+
+## Only MiSeq
+```{r}
+# subset only Miseq samples
+ps_miseq_comb <- subset_samples(ps_22b_msvns, SequencingPlatform == "MiSeq")
+
+# Extract the metadata (sample data) and get the treatment information
+sam_data_miseq <- data.frame(sample_data(ps_miseq_comb))
+
+read_depth_df_miseq <- data.frame(Sample = names(read_counts), ReadCounts = read_counts)
+read_depth_df_miseq <- merge(read_depth_df_miseq, sam_data_miseq, by.x = "Sample", by.y = "row.names")
+
+summary_stats <- read_depth_df_miseq %>%
+  group_by(SxL) %>%
+  summarize(
+    Mean = mean(ReadCounts),
+    Variance = var(ReadCounts),
+    Skewness = skewness(ReadCounts)
+  )
+summary_stats
+
+# Use scientific notation for mean and variance
+summary_stats <- summary_stats %>%
+  mutate(label = paste0("Mean: ", scientific(Mean, digits = 2), 
+                        "\nVariance: ", scientific(Variance, digits = 2),
+                        "\nSkewness: ", round(Skewness, 2)))
+
+# Merge the summary_stats back with the read_depth_df for plotting
+read_depth_df_miseq <- read_depth_df_miseq %>%
+  left_join(summary_stats, by = "SxL")
+
+# Plot with text labels showing the statistics
+ggplot(read_depth_df_miseq, aes(x = reorder(Sample, -ReadCounts), y = ReadCounts, fill = SxL)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual("", values = sxl_color) +
+  xlab("Samples") +
+  ylab("Read Depth") +
+  ggtitle("Uniformity of Read Depth") +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),  # Remove X-axis labels
+        axis.ticks.x = element_blank()) + # Remove X-axis ticks
+  theme(legend.key.width = unit(.6, "cm"), axis.title = element_text(size = 12),
+         legend.text=element_text(size=10), legend.title=element_text(size=12),
+         legend.background = element_rect(colour = NA, fill = NA),
+         legend.position = "bottom") +
+  facet_wrap(~ SxL, scales = "free_x") +  # Separate plots for each SxL value
+  geom_text(data = summary_stats, aes(x = Inf, y = Inf, label = label),
+            hjust = 1.1, vjust = 1.1, size = 3.5, inherit.aes = FALSE)
+ggsave("20241002_2022Plate1_Miseq_readdepth_persample_stats.png", height = 8, width = 15)
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

@@ -1,0 +1,369 @@
+---
+title: "2022 Plate1 Old and New Library Prep DADA2"
+author: "Brooke Benz"
+date: "2024-4-18"
+output:
+  html_notebook: 20240418_BarleyMicrobiome_dada2_2022Plate1_OldNew_BRB
+  pdf_document: 20240418_BarleyMicrobiome_dada2_2022Plate1_OldNew_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+## Loading Packages
+```{r} 
+library(dada2); packageVersion("dada2") #1.26.0
+library(phyloseq)
+
+#set seed
+set.seed(617)
+```
+
+## Load and Organize Data
+```{r}
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/fastq" # CHANGE ME to the directory containing the fastq files.
+
+list.files(path)
+```
+
+```{r}
+# Forward and reverse fastq filenames have format: SAMPLENAME_R1_001.fastq and SAMPLENAME_R2_001.fastq
+#Ensure that there is 1 R1 and 1 R2 for each sample - they are always in pairs
+fnFs <- sort(list.files(path, pattern="_R1_001.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="_R2_001.fastq.gz", full.names = TRUE))
+
+# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
+#Finds first _ then will remove everything after that, probably keeps R1 and R2 to know which are forward and reverse
+#Don't include _ in sample names
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+
+sample.names
+```
+
+## Forward Read Quality Plots
+```{r}
+#Green line is the average, this is what you should look at
+plotQualityProfile(fnFs[1:2])
+```
+```{r}
+plotQualityProfile(fnFs[96:97])
+```
+```{r}
+plotQualityProfile(fnFs[163:164])
+#Look for if reads drop below 30 Quality Score
+```
+
+## Reverse Read Quality Plots
+```{r}
+plotQualityProfile(fnRs[1:2])
+```
+```{r}
+plotQualityProfile(fnRs[96:97])
+```
+```{r}
+plotQualityProfile(fnRs[163:164])
+#Look for if reads drop below 30 Quality Score
+```
+
+## Filter Files
+```{r}
+# Place filtered files in filtered/ subdirectory
+filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+```
+
+```{r}
+# Tells you how many samples are in Forwards and Reverse - they should match
+length(fnFs)
+```
+```{r}
+length(fnRs)
+```
+
+```{r}
+#If they don't match can run:
+#any(duplicated(c(fnFs, fnRs)))
+```
+
+## Trimming
+```{r}
+#Trim based on quality plots 
+#truncLen= how much to trim off of f or r 
+#trimLeft = used to trim primers again listed as f, r
+#maxN can't be changed, amount of ambiguous bp like n
+#maxEE = maximum amount of expected error. so reads with more than that amount will be discarded, 2 is the baseline, don't do more than 5 if possible
+#truncQ= truncates reads at the first instance of a Q score less than or equal to the specified value, at 2 this means there's a 63% chance of that base being incorrect. Will get rid of really bad reads that are below this threshold
+#rm.phix = have to put TRUE because we include PhiX in our runs. Put FALSE if no PhiX used in seq run
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,230), trimLeft=c(19,21),
+                     maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+                     compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
+head(out)
+```
+
+## Plot Quality Profiles Re-Check
+```{r}
+#Run quality profiles again to check that trimming worked
+plotQualityProfile(filtFs[16:20])
+```
+
+```{r}
+plotQualityProfile(filtRs[16:20])
+```
+
+```{r}
+#To check if there is any duplicated files:
+exists <- file.exists(filtFs) & file.exists(filtRs)
+filtFs <- filtFs[exists]
+filtRs <- filtRs[exists]
+#will look through all files in filtFs and filtRs to check that there are the same amount of Fs and Rs
+```
+
+## Learn Error Rates
+```{r}
+#Creates an error model, every run has different error rates
+#Starts with the assumption that the error rates are the max possible
+#Alternates error rate estimation and cample composition inference until it is at a consistent solution
+#Check that they follow the trend
+errF <- learnErrors(filtFs, multithread=TRUE)
+#102305320 total bases in 462920 reads from 13 samples will be used for learning the error rates
+errR <- learnErrors(filtRs, multithread=TRUE)
+#106533779 total bases in 509731 reads from 14 samples will be used for learning the error rates
+
+#Plots frequency of each possible base transistions as a function of quality
+#Black line is observed error rate
+#Red line is expected error rate
+#frequency of errors decrease as quality score increases
+plotErrors(errF, nominalQ=TRUE)
+```
+
+```{r}
+plotErrors(errR, nominalQ=TRUE)
+```
+
+
+## Inspect DADA Class Object
+```{r}
+#Applies the core sample inference algorithm to the filtered and trimmed sequence data
+#Use error model to test if a sequence is real or if it's because of sequencing error
+#Gets rid of low quality data
+dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
+dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+
+#Inspecting the returned dada-class object
+dadaFs[[1]]
+```
+
+```{r}
+dadaRs[[1]]
+```
+
+## Merge Paired Reads
+```{r}
+# Merge paired reads - only if they overlap exactly
+#In previous steps it should have already discarded them
+mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+# Inspect the merger data.frame from the first sample
+head(mergers[[3]])
+```
+```{r}
+head(mergers[[10]])
+```
+
+## Sequence Table and Distribution Lengths
+```{r}
+# Making a sequence table
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab)
+```
+
+```{r}
+sum(seqtab)
+```
+
+```{r}
+# Inspect distribution of sequence lengths and cut everything not matching
+table(nchar(getSequences(seqtab)))
+```
+
+```{r}
+seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 245:259]
+table(nchar(getSequences(seqtab2)))
+```
+
+## Remove Chimeras
+```{r}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+#Identified 54805 bimeras out of 111274 input sequences
+dim(seqtab.nochim)
+```
+
+```{r}
+sum(seqtab.nochim)/sum(seqtab)
+```
+
+```{r}
+# Track reads through the pipeline
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+head(track)
+
+path2 <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq"
+#Save organelle-filtered data
+write.csv(track, file.path(path2, "2022b_Plate1_OldNew_tracksanity.csv"))
+#Use this output to check how much of data is being lost due to chimeras
+```
+
+## Assign Taxonomy
+```{r}
+taxa <- assignTaxonomy(seqtab.nochim, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+taxa.print <- taxa # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+#Remove Chloroplast Mitochondria and Eukaryota
+```{r}
+#remove chloroplast
+is.chloro <- taxa[,"Order"] %in% "Chloroplast"
+seqtab.nochloro <- seqtab.nochim[,!is.chloro]
+taxanochloro <- assignTaxonomy(seqtab.nochloro, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+taxa.print <- taxanochloro
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+```{r}
+sum(seqtab.nochloro)
+```
+
+```{r}
+sum(seqtab.nochloro)/sum(seqtab.nochim)
+```
+
+```{r}
+length(seqtab.nochloro)
+```
+
+```{r}
+dim(seqtab.nochloro)
+```
+
+```{r}
+dim(taxanochloro)
+```
+
+```{r}
+#Remove mitochondria
+is.mito <- taxanochloro[,"Family"] %in% "Mitochondria"
+seqtab.nochloronomito <- seqtab.nochloro[,!is.mito]
+taxanochloronomito <- assignTaxonomy(seqtab.nochloronomito, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+taxa.print <- taxanochloronomito # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+```{r}
+sum(seqtab.nochloronomito)
+```
+
+```{r}
+sum(seqtab.nochloronomito)/sum(seqtab.nochloro)
+```
+
+```{r}
+sum(seqtab.nochloronomito)/sum(seqtab.nochim)
+```
+
+```{r}
+length(seqtab.nochloronomito)
+```
+
+```{r}
+dim(seqtab.nochloronomito)
+```
+
+```{r}
+dim(taxanochloronomito)
+```
+
+```{r}
+#Remove Eukaryota
+is.euk <- taxanochloronomito[,"Kingdom"] %in% "Eukaryota"
+seqtab.nochloronomitoeuk <- seqtab.nochloronomito[,!is.euk]
+taxanochloronomitoeuk <- assignTaxonomy(seqtab.nochloronomitoeuk, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+taxa.print <- taxanochloronomitoeuk # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+```{r}
+sum(seqtab.nochloronomitoeuk)
+```
+
+```{r}
+sum(seqtab.nochloronomitoeuk)/sum(seqtab.nochloronomito)
+```
+
+```{r}
+sum(seqtab.nochloronomitoeuk)/sum(seqtab.nochim)
+```
+
+```{r}
+sum(seqtab.nochloronomitoeuk)/sum(seqtab)
+```
+
+```{r}
+length(seqtab.nochloronomitoeuk)
+```
+
+```{r}
+dim(seqtab.nochloronomitoeuk)
+```
+
+```{r}
+dim(taxanochloronomitoeuk)
+```
+
+```{r}
+getN <- function(x) sum(getUniques(x))
+track2 <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim), rowSums(seqtab.nochloro), rowSums(seqtab.nochloronomito), rowSums(seqtab.nochloronomitoeuk))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track2) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim", "nochloro", "nomito", "noeuk")
+rownames(track2) <- sample.names
+head(track2)
+```
+
+```{r}
+write.csv(track2, file.path(path2, "2022b_Plate1_OldNew_tracksanity_nochloromitoeuk.csv"))
+#Use this output to check how much of data is being lost each step
+```
+
+## Saving Files
+```{r}
+write.csv(seqtab.nochloronomitoeuk, file.path(path2, "2022b_Plate1_OldNew_seqtab.nochloromitoeuk.csv"))
+write.csv(taxanochloronomitoeuk, file.path(path2, "2022b_Plate1_OldNew_taxanochloromitoeuk.csv"))
+
+#Save as rds objects for use in phyloseq
+saveRDS(seqtab.nochloronomitoeuk, file.path(path2, "2022b_Plate1_OldNew_seqtab.nochloronomitoeuk.rds"))
+saveRDS(taxanochloronomitoeuk, file.path(path2, "2022b_Plate1_OldNew_taxanochloronomitoeuk.rds"))
+
+##Create dtb file
+dtb <- cbind(t(seqtab.nochloronomitoeuk), taxanochloronomitoeuk)
+write.csv(dtb, file.path(path2, "2022b_Plate1_OldNew_dtb.final.seqtab.nochloronomitoeuk.csv"))
+```
+
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

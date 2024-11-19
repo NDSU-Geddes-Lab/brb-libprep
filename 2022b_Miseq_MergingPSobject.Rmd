@@ -1,0 +1,55 @@
+---
+title: "Merging 2022 Miseq Plate Objects Final Code"
+author: "Brooke Benz"
+date: "2024-05-15"
+output:
+  html_notebook: 20240515_2022b_miseq_BarleyMicrobiome_MakingPSObjects_BRB
+  pdf_document: 20240515_2022b_miseq_BarleyMicrobiome_MakingPSObjects_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+#Loading Packages
+```{r}
+library(phyloseq)
+library(Biostrings)
+library(dplyr) #loading in the %>% function
+
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Merging PS Objects"
+
+set.seed(617)
+```
+
+#Loading in all files corresponding to each run/plate
+## 2022b MiSeq
+```{r}
+seqtab_miseq <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/DADA2/2022b_Plate1_OldNew_seqtab.nochloronomitoeuk.rds")
+taxa_miseq <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/DADA2/2022b_Plate1_OldNew_taxanochloronomitoeuk.rds")
+meta_miseq <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/2022b_MiSeq_Metadata.csv", #row.names = 1,
+                 stringsAsFactors = TRUE)
+dim(meta_miseq)
+rownames(meta_miseq) <- meta_miseq$SampleID
+meta_miseq
+```
+
+# Create Phyloseq Object Correctly
+```{r}
+ps_miseq <- phyloseq(otu_table(seqtab_miseq, taxa_are_rows=FALSE), 
+               sample_data(meta_miseq), 
+               tax_table(taxa_miseq))
+ps_miseq
+ps_miseq@sam_data
+
+saveRDS(ps_miseq,file.path(path,"2022b_Plate1_miseq.ps.rds"))
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

@@ -1,0 +1,234 @@
+---
+title: "2022b Miseq v Nextseq Rarefaction Curves"
+author: "Brooke Benz"
+date: "2024-07-19"
+output:
+  html_notebook: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
+  pdf_document: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+```{r}
+library(phyloseq); packageVersion("phyloseq") #1.38.0
+library(vegan); packageVersion("vegan") #2.6.4
+library(dplyr)
+library(ggplot2)
+library(tibble)
+#install.packages("moments")
+library(moments)
+library(scales)
+
+## Loading functions and setting path
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Rarefaction Curves"
+
+#set seed
+#runif(1, min = 0, max = 1000)
+set.seed(617)
+```
+
+## Loading in PS Objects
+```{r}
+ps_22b_msvns <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_msvns
+```
+
+## Rarefaction Curves
+```{r}
+## need to get data frame with sample ID, ASV, and number of reads
+  ## taxa need to be across columns
+  ## samples are the rows
+      ## Sample ID need to be rownames
+
+## determine smallest read depth
+  ## usually rarefy to smallest read depth
+    ## we will not be doing that
+
+## make rarefaction curves
+  ## curve_df <- rarecurve (df, step=50) # step gives what increments x axis will be
+## plot using ggplot2
+otu_msvns <- otu_table(ps_22b_msvns)
+class(otu_msvns) <- "matrix" # as.matrix() will do nothing
+  ## you get a warning here, but this is what we need to have
+#otu_msvns <- t(otu_msvns) # transpose observations to rows
+# code from potato microbiome project
+  # https://github.com/sklasek/potato_soil_patterns/blob/main/markdowns/06_ordinations_and_barplots_by_state_ITS.md
+#run rarecurve to get base R plot
+rarecurve(otu_msvns, step=1000)
+ggsave("20240724_2022Plate1_MiseqvNextseq_rarefaction_curves_samplename.png", height = 8, width = 15)
+
+#make into df for better visualization with ggplot
+miseqvnextseq_rarefy_df <- rarecurve(otu_msvns, step=1000, cex=0.5, tidy = TRUE) # make a dataframe of rarefaction counts
+
+miseqvnextseq_curve <- ggplot(miseqvnextseq_rarefy_df, aes(Sample, Species, group = Site))+ #
+  scale_y_continuous("ASV Richness")+
+  scale_x_continuous("Read Number")+ # Set xaxis limit to 1 million
+  ggtitle("MiSeq vs NextSeq Rarefaction Curves")+
+  geom_vline(xintercept = 10000, color = "gray")+
+  geom_vline(xintercept = 20000, color = "gray")+
+  geom_vline(xintercept = 100000, color = "gray")+
+  geom_line()+
+  theme_classic()
+miseqvnextseq_curve
+# for lower read-depth ASVs, 10000 reads does a good job capturing them
+# for higher read-depth ASVs, 100000 reads would be optimal
+  # however most of the time you won't have 100000 reads per sample
+# can try rarefying to 20000 reads and see how many samples are lost
+
+miseqvnextseq_curve <- ggplot(miseqvnextseq_rarefy_df, aes(Sample, Species, group = Site))+ # sample = read#, species = number of ASVs, site = sample name
+  scale_y_continuous("ASV Richness")+
+  scale_x_continuous("Read Number")+ #,limits = c(0, 1e6) Set xaxis limit to 1 million
+  ggtitle("MiSeq vs NextSeq Rarefaction Curves")+
+  geom_vline(xintercept = 10000, color = "gray")+
+  geom_vline(xintercept = 100000, color = "gray")+
+  geom_line()+
+  theme_classic()
+miseqvnextseq_curve
+ggsave("20240724_2022Plate1_MiseqvNextseq_rarefaction_curves.png", height = 8, width = 15)
+```
+
+### Rarefaction curves split by Seq Platform and Lib Prep Method
+```{r}
+# subset samples
+ps_22b_msvns@sam_data
+ps_miseq_old <- subset_samples(ps_22b_msvns, SxL=="MiSeq_Old")
+ps_miseq_new <- subset_samples(ps_22b_msvns, SxL=="MiSeq_New")
+ps_nextseq_new <- subset_samples(ps_22b_msvns, SxL=="NextSeq_New")
+```
+### Miseq Old library prep method curves
+```{r}
+otu_msold <- otu_table(ps_miseq_old)
+class(otu_msold) <- "matrix" # as.matrix() will do nothing
+  ## you get a warning here, but this is what we need to have
+#otu_msold <- t(otu_msold) # transpose observations to rows
+# code from Egla's potato microbiome project
+  # https://github.com/sklasek/potato_soil_patterns/blob/main/markdowns/06_ordinations_and_barplots_by_state_ITS.md
+rarecurve(otu_msold, step=1000)
+ggsave("20240724_2022Plate1_Miseq_Old_rarefaction_curves_samplename.png", height = 8, width = 15)
+miseq_old_rarefy_df <- rarecurve(otu_msold, step=1000, cex=0.5, tidy = TRUE) # make a dataframe of rarefaction counts
+
+miseq_old_curve <- ggplot(miseq_old_rarefy_df, aes(Sample, Species, group = Site))+ # sample = read#, species = number of ASVs, site = sample name
+  scale_y_continuous("ASV Richness")+
+  scale_x_continuous("Read Number")+ 
+  ggtitle("MiSeq Old Lib Prep Rarefaction Curves")+
+  geom_vline(xintercept = 10000, color = "gray")+
+  #geom_vline(xintercept = 20000, color = "gray")+
+  geom_vline(xintercept = 100000, color = "gray")+
+  geom_line()+
+  theme_classic()
+miseq_old_curve
+ggsave("20240724_2022Plate1_Miseq_Old_rarefaction_curves.png", height = 8, width = 15)
+```
+
+### Miseq New library prep method curves
+```{r}
+otu_msnew <- otu_table(ps_miseq_new)
+class(otu_msnew) <- "matrix" # as.matrix() will do nothing
+  ## you get a warning here, but this is what we need to have
+#otu_msnew <- t(otu_msnew) # transpose observations to rows
+# code from Egla's potato microbiome project
+  # https://github.com/sklasek/potato_soil_patterns/blob/main/markdowns/06_ordinations_and_barplots_by_state_ITS.md
+rarecurve(otu_msnew, step=1000)
+ggsave("20240724_2022Plate1_Miseq_New_rarefaction_curves_samplename.png", height = 8, width = 15)
+miseq_new_rarefy_df <- rarecurve(otu_msnew, step=1000, cex=0.5, tidy = TRUE) # make a dataframe of rarefaction counts
+
+miseq_new_curve <- ggplot(miseq_new_rarefy_df, aes(Sample, Species, group = Site))+ # sample = read#, species = number of ASVs, site = sample name
+  scale_y_continuous("ASV Richness")+
+  scale_x_continuous("Read Number")+ 
+  ggtitle("MiSeq New Lib Prep Rarefaction Curves")+
+  geom_vline(xintercept = 10000, color = "gray")+
+  #geom_vline(xintercept = 20000, color = "gray")+
+  geom_vline(xintercept = 100000, color = "gray")+
+  geom_line()+
+  theme_classic()
+miseq_new_curve
+ggsave("20240724_2022Plate1_Miseq_New_rarefaction_curves.png", height = 8, width = 15)
+```
+
+### Nextseq New library prep method curves
+```{r}
+otu_nsnew <- otu_table(ps_nextseq_new)
+class(otu_nsnew) <- "matrix" # as.matrix() will do nothing
+  ## you get a warning here, but this is what we need to have
+#otu_nsnew <- t(otu_nsnew) # transpose observations to rows
+# code from Egla's potato microbiome project
+  # https://github.com/sklasek/potato_soil_patterns/blob/main/markdowns/06_ordinations_and_barplots_by_state_ITS.md
+rarecurve(otu_nsnew, step=1000)
+ggsave("20240724_2022Plate1_Nextseq_New_rarefaction_curves_samplename.png", height = 8, width = 15)
+nextseq_new_rarefy_df <- rarecurve(otu_nsnew, step=1000, cex=0.5, tidy = TRUE) # make a dataframe of rarefaction counts
+
+nextseq_new_curve <- ggplot(nextseq_new_rarefy_df, aes(Sample, Species, group = Site))+# sample = read#, species = number of ASVs, site = sample name
+  scale_y_continuous("ASV Richness")+
+  scale_x_continuous("Read Number")+ 
+  ggtitle("NextSeq New Lib Prep Rarefaction Curves")+
+  geom_vline(xintercept = 10000, color = "gray")+
+  #geom_vline(xintercept = 20000, color = "gray")+
+  geom_vline(xintercept = 100000, color = "gray")+
+  geom_line()+
+  theme_classic()
+nextseq_new_curve
+ggsave("20240724_2022Plate1_Nextseq_New_rarefaction_curves.png", height = 8, width = 15)
+```
+
+## Rarefying to Miseq read-depth
+```{r}
+## Subset out samples by seq platform and lib prep method
+miseq_old <- subset_samples(ps_22b_msvns, SxL%in%c("MiSeq_Old"))
+miseq_old
+miseq_new <- subset_samples(ps_22b_msvns, SxL%in%c("MiSeq_New"))
+miseq_new
+nextseq_new <- subset_samples(ps_22b_msvns, SxL%in%c("NextSeq_New"))
+nextseq_new
+
+## Determine number of sequences per sample to see how low Miseq is
+Sequences_per_sample_miseq_old <- as.data.frame(sample_sums(miseq_old))
+Sequences_per_sample_miseq_old
+write.csv(Sequences_per_sample_miseq_old, file.path(path,
+                                                    "2022b_miseq_old_read_counts.csv"))
+Sequences_per_sample_miseq_new <- as.data.frame(sample_sums(miseq_new))
+Sequences_per_sample_miseq_new
+write.csv(Sequences_per_sample_miseq_new, file.path(path,
+                                                    "2022b_miseq_new_read_counts.csv"))
+Sequences_per_sample_nextseq_new <- as.data.frame(sample_sums(nextseq_new))
+Sequences_per_sample_nextseq_new
+write.csv(Sequences_per_sample_nextseq_new, file.path(path,
+                                                  "2022b_nextseq_new_read_counts.csv"))
+
+## Use this to determine what value to rarefy entire dataset to
+## Will rarefy to 10000
+  ## miseq_old - will remove 17 samples
+  ## miseq_new - will remove 20 samples
+  ## nextseq_new - will remove 14 samples
+  ## All samples being removed in nextseq are also removed from miseq_new
+  ## Only one sample from nextseq is removed from miseq_old - BM-34
+miseq_old_rare <- rarefy_even_depth(miseq_old, sample.size = 10000) #17 samples removed
+#Removed 11906 ASVs because no longer present in any sample after subsampling
+# leaves 1361 taxa in 76 samples
+miseq_old_rare
+miseq_new_rare <- rarefy_even_depth(miseq_new, sample.size = 10000) #20 samples removed
+#Removed 11981 ASVs because no longer present in any sample after subsampling
+# leaves 1286 taxa in 73 samples
+miseq_new_rare
+nextseq_new_rare <- rarefy_even_depth(nextseq_new, sample.size = 10000) #14 samples removed
+#Removed 11107 ASVs because no longer present in any sample after subsampling
+# leaves 2160 taxa in 79 samples
+nextseq_new_rare
+
+## Will now rarefy entire dataset to 10000
+ps_22b_p1_upd_rare <- rarefy_even_depth(ps_22b_p1_upd, sample.size = 10000) #51 samples removed
+#Removed 10028 ASVs because no longer present in any sample after subsampling
+# leaves 3239 taxa in 228 samples
+ps_22b_p1_upd_rare
+saveRDS(ps_22b_p1_upd_rare, "2022b_p1_miseq_nextseq_rare.ps.rds")
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

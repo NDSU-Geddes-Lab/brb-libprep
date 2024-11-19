@@ -1,0 +1,58 @@
+---
+title: "2022b Plate 1 Comparing Qubit vs PicoGreen"
+author: "Brooke Benz"
+date: "2024-05-15"
+output:
+  html_notebook: 20240515_2022b_QubitvPicoGree_BRB
+  pdf_document: 20240515_2022b_QubitvPicoGreen_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+## Loading Packages
+```{r}
+library(ggplot2)
+library(ggpubr)
+
+path <- "/Users/brookeb/Documents/Barley Microbiome Project/2022 Barley Microbiome"
+
+set.seed(617)
+```
+
+## Loading Files
+```{r}
+ng <- read.csv("/Users/brookeb/Documents/Barley Microbiome Project/2022 Barley Microbiome/2022Plate1_nguL_QubitvPicoGreen.csv")
+```
+
+## Plotting 
+### Concentration in ng/uL
+```{r}
+ggplot(ng, aes(x = Picogreen, y = Qubit)) +
+  geom_point(color = "#64A8FF") +
+  stat_regline_equation(aes(label =  after_stat(paste(eq.label, adj.rr.label, sep = "*\", \"*"))),
+                        color = "black", label.x.npc = 0.95,
+                        label.y.npc = 0.95, hjust = 1) +
+  geom_smooth(method = 'lm', formula = y ~ x, se = TRUE, linewidth = 0.5, color = "black") +
+  labs(x = "Picogreen Values (ng/uL)", y = "Qubit Values (ng/uL)",
+       title = "Correlation between 2022 Plate1 Picogreen and Qubit ng/uL") +
+  theme_bw()
+
+ggsave("20241002_2022b_Plate1_QubitvPicogreen_nguL.png", height = 5, width = 7)
+```
+
+### Linear Model
+```{r}
+lm_model <- lm(Picogreen ~ Qubit, data = ng)
+summary(lm_model)
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

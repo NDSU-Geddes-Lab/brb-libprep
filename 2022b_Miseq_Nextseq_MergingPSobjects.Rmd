@@ -1,0 +1,134 @@
+---
+title: "2022b Plate1 Merging Miseq and Nextseq PS Objects"
+author: "Brooke Benz"
+date: "2024-06-11"
+output:
+  html_notebook: 20240611_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_mergingpsobject_BRB
+  pdf_document: 20240611_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_mergingpsobject_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+```{r}
+##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
+library(phyloseq); packageVersion("phyloseq") #1.38.0
+library(viridis)
+library(vegan); packageVersion("vegan") #2.6.4
+library("DESeq2")
+library(dplyr)
+library(ggplot2)
+library(tibble)
+
+## Loading functions and setting path
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity"
+
+#set seed
+set.seed(617)
+
+#add 'not in' function
+`%nin%` = Negate(`%in%`)
+```
+
+## Loading in PS Objects
+```{r}
+ps_22b_ms <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq.ps.rds")
+ps_22b_ms
+ps_22b_ms@sam_data
+
+ps_22b_ns <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_nextseq_trim251.ps.rds")
+ps_22b_ns@sam_data
+# # Subsetting out only Plate 1 to compare to miseq
+ps_22b_ns_p1 <- subset_samples(ps_22b_ns, original_plate == "P1")
+ps_22b_ns_p1
+
+# # Changing sample names of ps_22b_ms so they are different than ps_22b_ns_p1
+# # extract sample data of ps object want to change names so they are in exact order
+meta <- sample_data(ps_22b_ms)
+# # manually change sample data name - changed both rowname and SampleID columns
+write.csv(meta, "ps_22b_ms_SampleData.csv")
+# # load back into R as an object
+new_sample_names <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/ps_22b_ms_SampleData.csv")
+
+# # Update sample data of ps object
+ps_22b_ms_upd <- ps_22b_ms
+sampledata = sample_data(data.frame(
+ new_sample_names, row.names=sample_names(ps_22b_ms_upd), stringsAsFactors=FALSE))
+sampledata
+sample_data(ps_22b_ms_upd) <- sampledata
+# # Check that it worked
+ps_22b_ms_upd@sam_data
+
+# # Check sample names
+sample_names(ps_22b_ms_upd)
+
+sample_data_df <- (as(sample_data(ps_22b_ms_upd), "data.frame"))
+# # Check the number of samples and new sample names
+num_samples <- nsamples(ps_22b_ms_upd)
+num_new_names <- length(sample_data_df[, 2])
+# # Change sample names to be different than ps_22b_ns
+sample_names(ps_22b_ms_upd) <- sample_data_df[, 2]
+# # Check that it worked - top samples should have o at end of their name
+sample_names(ps_22b_ms_upd)
+
+# # Repeating with ps_22b_ns so they have the same metadata info
+# #extract sample data of ps object want to change names so they are in exact order
+meta2 <- sample_data(ps_22b_ns_p1)
+# # manually change sample data name - deleted X column
+write.csv(meta2, "ps_22b_ns_p1_SampleData.csv")
+# # load back into R as an object
+new_sample_names2 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/ps_22b_ns_p1_SampleData.csv")
+
+# # Update sample data of ps object
+ps_22b_ns_p1_upd <- ps_22b_ns_p1
+sampledata = sample_data(data.frame(
+ new_sample_names2, row.names=sample_names(ps_22b_ns_p1_upd), stringsAsFactors=FALSE))
+sampledata
+sample_data(ps_22b_ns_p1_upd) <- sampledata
+ps_22b_ns_p1_upd@sam_data
+
+ps_22b_p1_upd <- merge_phyloseq(ps_22b_ms_upd, ps_22b_ns_p1_upd)
+ps_22b_p1_upd
+ps_22b_p1_upd@sam_data
+```
+
+```{r}
+# # Adding seq platform x lib prep method in metadata files
+data_b <- (as(sample_data(ps_22b_p1_upd), "data.frame"))
+data_b$SxL <- as.factor(paste(data_b$SequencingPlatform, data_b$SxL, sep = "_"))
+# # For some reason, updating the sample_names changes the structure of the data frame
+# # removes factor levels of each column
+# # Identify the columns that should be factors
+str(data_b_ms)
+str(data_b_ms_upd)
+# # need to make these factors again
+factor_columns <- c("SampleID", "SampleName", "sample_well", "HeadRep", "Line", "Genotype", "DiseaseStatus.y", "Location", "SampleNumber", "sample_type", "duplicate", "original_plate", "SequencingRun", "SequencingPlatform", "SxL")
+# # Convert these columns to factors
+data_b <- data_b %>%
+  mutate(across(all_of(factor_columns), as.factor))
+str(data_b)
+
+# # Adding total number of reads per sample as column in metadata
+otu_table <- otu_table(ps_22b_p1_upd)
+# # transposing so samples are columns
+otu_table <- t(otu_table)
+# # Sum the counts for each sample (assuming samples are columns)
+total_reads <- colSums(otu_table)
+# # Add the total reads as a new column in the metadata
+data_b$total_reads <- total_reads
+sample_data(ps_22b_p1_upd) <- data_b
+sample_data(ps_22b_p1_upd)
+saveRDS(ps_22b_p1_upd, "2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1_upd <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+data_b <- (as(sample_data(ps_22b_p1_upd), "data.frame"))
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

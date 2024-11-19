@@ -1,0 +1,65 @@
+---
+title: "Comparing Costs for Manual and Automated Library Preparation"
+author: "Brooke Benz"
+date: "2024-10-02"
+output:
+  html_notebook: 20241002_consumable_cost_manual_automated_BRB
+  pdf_document: 20241002_consumable_cost_manual_automated_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+## Loading Packages
+```{r}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Consumable Price Comparison"
+
+set.seed(617)
+
+step_color <- c("#FED789", "#023743", "#72874E", "#476F84", "#A4BED5", "#453947") # colors from nationalparkcolors package - set Acadia
+```
+
+## Loading Files
+```{r}
+price_csv <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Consumable Price Comparison/2022b_Plate1_consumablepricetracking_noafteroptimization.csv")
+```
+
+## Making Data Frame
+```{r}
+price_df <- data.frame(price_csv)
+
+price_df <- price_df[price_df$Step != "total", ]
+
+df_long <- price_df %>%
+  pivot_longer(cols = c(Manual_Price, AutomatedBO_Price),
+               names_to = "Method", values_to = "Price")
+```
+
+## Stacked bar comparison 
+```{r}
+df_long$Method <- factor(df_long$Method, levels = c("Manual_Price", "AutomatedBO_Price"))
+df_long$Step <- factor(df_long$Step, levels = c("amplicon_pcr", "index_pcr", "bead_cleanups", "gel_tapestation", "pg_qubit_quantification", "diluting_pooling"))
+
+ggplot(df_long, aes(x = Method, y = Price, fill = Step)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Library Preparation Method", y = "Cost of Consumables ($)",
+       title = "Comparison of Consumable Cost by Method") +
+  theme_minimal() +
+  scale_fill_manual("", values = step_color) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("20241002_2022Plate1_costcomparison_bymethod.png", height = 8, width = 15)
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

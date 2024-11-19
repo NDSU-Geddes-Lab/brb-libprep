@@ -1,0 +1,55 @@
+---
+title: "Merging 2022 Plate Objects Final Code"
+author: "Brooke Benz"
+date: "2024-05-15"
+output:
+  html_notebook: 20240515_2022b_BarleyMicrobiome_MakingPSObjects_BRB
+  pdf_document: 20240515_2022b_BarleyMicrobiome_MakingPSObjects_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+#Loading Packages
+```{r}
+library(phyloseq)
+library(Biostrings)
+library(dplyr) #loading in the %>% function
+
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/Merging PS Objects"
+
+set.seed(617)
+```
+
+#Loading in all files corresponding to each run/plate
+## 2022b NextSeq
+```{r}
+seqtab <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/DADA2/2022b_seqtab.nochloronomitoeuk.rds")
+taxa <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/DADA2/2022b_taxanochloronomitoeuk.rds")
+meta <- read.csv("/Users/brookeb/Documents/Barley Microbiome Project/2022 Barley Microbiome/2022b_merged_metadata.csv", #row.names = 1,
+                 stringsAsFactors = TRUE)
+dim(meta)
+rownames(meta) <- meta$SampleID
+meta
+```
+
+## Create Phyloseq Object Correctly
+```{r}
+ps <- phyloseq(otu_table(seqtab, taxa_are_rows=FALSE), 
+               sample_data(meta), 
+               tax_table(taxa))
+ps
+ps@sam_data
+
+saveRDS(ps,file.path(path,"2022b_trim251.ps.rds"))
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

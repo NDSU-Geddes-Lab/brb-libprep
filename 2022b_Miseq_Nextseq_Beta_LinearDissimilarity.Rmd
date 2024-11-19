@@ -1,0 +1,210 @@
+---
+title: "2022b Plate1 Miseq vs NextSeq Beta Diversity Linear Dissimilarities"
+author: "Brooke Benz"
+date: "2024-11-04"
+output:
+  html_notebook: 20241104_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_lineardissimilarity_BRB
+  pdf_document: 20241104_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_lineardissimilarity_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+```{r}
+##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
+library(devtools)
+library("metagMisc"); packageVersion("metagMisc") # 0.5.0
+library(phyloseq); packageVersion("phyloseq") #1.38.0
+library(vegan); packageVersion("vegan") #2.6.4
+library("DESeq2"); packageVersion("DESeq2")
+library(dplyr); packageVersion("dplyr")
+library(ggplot2); packageVersion("ggplot2")
+library(viridis); packageVersion("viridis")
+
+# setting path
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/Linear Dissimilarities"
+
+group.colors <- c("#4f6980", "#b9aa97", "#b66353", "#849db1", "#a2ceaa", "#7e756d")
+
+#set seed
+#runif(1, min = 0, max = 1000)
+set.seed(617)
+```
+
+## Loading in Files
+```{r}
+## phyloseq objects
+ps_22b_p1 <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+
+ps_22b_p1_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq_rare.ps.rds")
+
+## dds objects
+ddsb <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240612_2022b_p1_miseq_nextseq_dds.RData")
+
+ddsb_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
+```
+
+## Transform Data and Calculate Distances
+```{r}
+## Variance-stabilized transformation
+vstb <- getVarianceStabilizedData(ddsb)
+vstb <- t(vstb)  #taxa as columns
+## Euclidean of VST
+dist.vstb <- vegdist(vstb, method="euclidean")
+
+## Hellinger Transformation
+### takes square root of the sum of an asv divided by sum of all asvs
+counts_rare <- counts(ddsb_rare)
+counts_rare <- t(counts_rare)  #taxa as columns
+htb_rare <- decostand(counts_rare, method = "hellinger")
+## Bray of HT
+dist.rare <- vegdist(counts_rare, method="bray")
+```
+
+## Linearize Distance Matrix
+```{r}
+vstb.dist.df <- dist2list(dist.vstb, tri=TRUE)
+
+htb.dist.df <- dist2list(dist.rare, tri=TRUE)
+```
+
+## Beta Diversity Dissimilarities
+### Non-Rarefied
+```{r}
+distanceMethodList
+
+diss.euc <- phyloseq_group_dissimilarity(
+  ps_22b_p1,
+  group = "SxL",
+  method = "euclidean", # Specify the distance method
+  justDF = TRUE # gives results in a data frame to be used in ggplot
+)
+diss.euc
+
+summary_stats <- diss.euc %>%
+  group_by(Group) %>%
+  dplyr::summarise(
+    Mean = mean(Dist),
+    SE = sd(Dist) / sqrt(n())  # Standard Error using n() within summarise
+  )
+
+#plotting means and standard error
+ggplot(summary_stats, aes(x = Group, y = Mean, fill = Group)) +
+  geom_point(size = 3, shape = 21, color = "black") +  # Plot means
+  geom_errorbar(aes(ymin = Mean - SE, ymax = Mean + SE), width = 0.2) +  # Error bars with SE
+  scale_fill_manual(values = group.colors) +  # Custom color palette
+  theme_bw() +
+  labs(
+    title = "Beta Diversity Dissimilarity",
+    x = "Method",
+    y = "Pairwise Dissimilarity (Mean ± SE)"
+  )
+ggsave("20241110_2022b_p1_beta_dissimilarity_meanSE_euc.png", height = 8, width = 13)
+```
+
+### Stats
+```{r}
+# # ANOVA
+anova.euc <- aov(Dist ~ Group, data = diss.euc)
+
+# Check the ANOVA summary
+summary(anova.euc)
+# Group (SxL) p-value: <2e-16***
+
+# # Tukey post hoc test
+tukey.euc <- TukeyHSD(anova.euc)
+tukey.euc
+# p-adj values:
+#MiseqOld x MiseqNew - 0.0168434
+#NextseqNew x MiseqNew - 0.0000000
+#MiseqNew-MiseqOld x MiseqNew - 0.3178620
+#MiseqOld-NextseqNew x MiseqNew - 0.0000000
+#MiseqNew-NextseqNew x MiseqNew - 0.0000000
+
+#NextseqNew x MiseqOld - 0.0000000
+#MiseqNew-MiseqOld x MiseqOld - 0.3313407
+#MiseqOld-NextseqNew x MiseqOld - 0.0000000
+#MiseqNew-NextseqNew x MiseqOld - 0.0000000
+
+#MiseqNew-MiseqOld x NextseqNew - 0.0000000
+#MiseqOld-NextseqNew x NextseqNew - 0.0000000
+#MiseqNew-NextseqNew x NextseqNew - 0.0000000
+
+#MiseqOld-NextseqNew x MiseqNew-MiseqOld - 0.0000000
+#MiseqNew-NextseqNew x MiseqNew-MiseqOld - 0.0000000
+#MiseqNew-NextseqNew x MiseqOld-NextseqNew - 0.5476750
+```
+
+### Rarefied 
+```{r}
+diss.bray <- phyloseq_group_dissimilarity(
+  ps_22b_p1_rare,
+  group = "SxL",
+  method = "bray",  # Specify the distance method
+  justDF = TRUE # gives results in a data frame to be used in ggplot
+)
+diss.bray
+
+summary_stats_rare <- diss.bray %>%
+  group_by(Group) %>%
+  dplyr::summarise(
+    Mean = mean(Dist),
+    SE = sd(Dist) / sqrt(n())  # Standard Error using n() within summarise
+  )
+
+#plotting means and standard error
+ggplot(summary_stats_rare, aes(x = Group, y = Mean, fill = Group)) +
+  geom_point(size = 3, shape = 21, color = "black") +  # Plot means
+  geom_errorbar(aes(ymin = Mean - SE, ymax = Mean + SE), width = 0.2) +  # Error bars with SE
+  scale_fill_manual(values = group.colors) +  # Custom color palette
+  theme_bw() +
+  labs(
+    title = "Beta Diversity Dissimilarity",
+    x = "Method",
+    y = "Pairwise Dissimilarity (Mean ± SE)"
+  )
+ggsave("20241110_2022b_p1_rare_beta_dissimilarity_meanSE_bray.png", height = 8, width = 13)
+```
+
+### Stats - Rarefied
+```{r}
+# # ANOVA
+anova.bray <- aov(Dist ~ Group, data = diss.bray)
+
+# Check the ANOVA summary
+summary(anova.bray)
+# Group (SxL) p-value: <4.75e-5***
+
+# # Tukey post hoc test
+tukey.bray <- TukeyHSD(anova.bray)
+tukey.bray
+# p-adj values:
+#MiseqOld x MiseqNew - 0.7616069
+#NextseqNew x MiseqNew - 0.9991264
+#MiseqNew-MiseqOld x MiseqNew - 0.9999992
+#MiseqOld-NextseqNew x MiseqNew - 0.0402718
+#MiseqNew-NextseqNew x MiseqNew - 0.3256849
+
+#NextseqNew x MiseqOld - 0.9112472
+#MiseqNew-MiseqOld x MiseqOld - 0.5750667
+#MiseqOld-NextseqNew x MiseqOld - 0.7951420
+#MiseqNew-NextseqNew x MiseqOld - 0.9991921
+
+#MiseqNew-MiseqOld x NextseqNew - 0.9989259
+#MiseqOld-NextseqNew x NextseqNew - 0.0887591
+#MiseqNew-NextseqNew x NextseqNew - 0.5443227
+
+#MiseqOld-NextseqNew x MiseqNew-MiseqOld - 0.0000522
+#MiseqNew-NextseqNew x MiseqNew-MiseqOld - 0.0201901
+#MiseqNew-NextseqNew x MiseqOld-NextseqNew - 0.6847901
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

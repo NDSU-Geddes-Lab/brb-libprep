@@ -1,0 +1,529 @@
+---
+title: "2022b MiSeq SCRuB of Plate 1"
+author: "Brooke Benz"
+date: "2024-06-10"
+output:
+  html_notebook: 20240610_BarleyMicrobiome_SCRuB_2022b_miseq_BRB
+  pdf_document: 20240610_BarleyMicrobiome_SCRuB_2022b_miseq_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+#### Load Packages, set path to data (hidden)
+```{r, echo=FALSE, results='hide', include=FALSE} 
+#install.packages("glmnet") #when installing glmnet input no for do you wnat to install from sources the package which needs compilation
+#install.packages("torch") #when installing select Yes when prompted
+
+x<-c("ggplot2", "phyloseq", "Biostrings", "dplyr", "tidyverse", "glmnet", "torch")  
+lapply(x, require, character.only = TRUE)
+
+#require(devtools)
+#devtools::install_github("shenhav-and-korem-labs/SCRuB")
+#require(SCRuB)
+library(SCRuB)
+
+#add 'not in' function
+`%nin%` = Negate(`%in%`)
+
+#set seed
+set.seed(617)
+
+# set ggplot2 theme
+theme_set(theme_bw(base_size=16)) 
+theme_update(panel.grid.major=element_line(0), panel.grid.minor=element_line(0))
+
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB"
+
+# load merged phyloseq object 
+ps_22b_ms <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Merging PS Objects/2022b_Plate1_miseq.ps.rds")
+ps_22b_ms
+```
+## Changing the metadata files
+```{r}
+metadata_22b_ms <- (as(sample_data(ps_22b_ms), "data.frame"))
+metadata_22b_ms
+```
+
+```{r}
+#Update column ControlType to Metadata file
+metadata_22b_ms <- metadata_22b_ms %>%
+  mutate(ControlType = ifelse(SampleID == "P1-Ex-Neg-Ctrl", "ExNormalization", as.character(ControlType)))
+metadata_22b_ms <- metadata_22b_ms %>%
+  mutate(ControlType = ifelse(SampleID == "P1-Ex-Neg-Ctrln", "ExNormalization", as.character(ControlType)))
+
+metadata_22b_ms <- metadata_22b_ms %>%
+  mutate(ControlType = ifelse(SampleID == "P1-PCR-Neg-Ctrl", "PCRNormalization", as.character(ControlType)))
+metadata_22b_ms <- metadata_22b_ms %>%
+  mutate(ControlType = ifelse(SampleID == "P1-PCR-Neg-Ctrln", "PCRNormalization", as.character(ControlType)))
+
+metadata_22b_ms
+```
+
+```{r}
+sample_data(ps_22b_ms) <- metadata_22b_ms
+
+write.csv(metadata_22b_ms, file = "2022b_miseq_SCRuBmetadata.csv", row.names = FALSE)
+```
+
+## Phase1 SCRuB - PCR Neg Ctrl
+### 2022b
+```{r}
+meta_phase1 <- (as(sample_data(ps_22b_ms), "data.frame"))
+mat_phase1 <- (as(otu_table(ps_22b_ms), "matrix"))
+
+# format for SCRuB
+meta_phase1 <- meta_phase1 %>% arrange(SampleID) %>% #puts everything in order by sampleID
+    select(is_control, sample_type, sample_well, sample_plate, original_plate, LibPrepMethod)#only selects these columns
+meta_phase1$sample_well <- as.character(meta_phase1$sample_well)#converts sample_well to character variable
+
+# rearrange rows to match - first order it by sample ID then remove sample id column
+mat_phase1 %>% data.frame %>% mutate(ids = rownames(mat_phase1)) %>%
+    arrange(ids) %>% select(-ids) %>% as.matrix -> mat_phase1
+
+# subset by plate
+meta_p1_o <- meta_phase1 %>% filter(LibPrepMethod == "Old") %>% select(is_control, sample_type, sample_well)
+mat_p1_o <- mat_phase1[rownames(mat_phase1) %in% rownames(meta_p1_o),]
+meta_p1_n <- meta_phase1 %>% filter(LibPrepMethod == "New") %>% select(is_control, sample_type, sample_well)
+mat_p1_n <- mat_phase1[rownames(mat_phase1) %in% rownames(meta_p1_n),]
+
+#Check that samples match and number of samples is correct - all should be TRUE and equal 96
+rownames(mat_p1_o) %in% rownames(meta_p1_o) #96
+rownames(mat_p1_n) %in% rownames(meta_p1_n) #96
+```
+
+### Run SCRuB
+* Running SCRuB with spatial (well location) information. Done by plate.
+```{r}
+#scrub DNA plates (individually) by DNA extraction controls
+scr_p1_o <- SCRuB(mat_p1_o, meta_p1_o, c("PCR-Neg-Ctrl") )
+scr_p1_n <- SCRuB(mat_p1_n, meta_p1_n, c("PCR-Neg-Ctrl") ) 
+```
+## Saving and loading Scrubbed files
+```{r}
+#save(scr_p1_o, file="scrubOut_p1_oldlibprep.RData")
+#save(scr_p1_n, file="scrubOut_p1_newlibprep.RData")
+
+load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_oldlibprep.RData")
+load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_newlibprep.RData")
+```
+
+## Examine output
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+# Estimated contamination level
+scr_p1_o$p %>% boxplot()  #read this as closer to 1 = less contaminated
+```
+```{r}
+median(100-(scr_p1_o$p*100))  #1.24% contamination
+```
+### 2022b Plate 1 New Library Prep method
+```{r}
+scr_p1_n$p %>% boxplot()
+```
+```{r}
+median(100-(scr_p1_n$p*100))  #0.096% contamination
+```
+
+## Estimated realtive abundance of the contamination community
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+#  index = 1 to 4669 ASVs in this dataset
+scr_p1_o$inner_iterations$`PCR-Neg-Ctrl`$gamma %>% plot() 
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_n$inner_iterations$`PCR-Neg-Ctrl`$gamma %>% plot() 
+```
+
+## Estimate well-to-well leakage
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+scr_p1_o$inner_iterations$`PCR-Neg-Ctrl`$alpha[, ncol(scr_p1_o$inner_iterations$`PCR-Neg-Ctrl`$alpha)]
+# 0.98% well-to-well leakage in plate 1 old library prep method
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_n$inner_iterations$`PCR-Neg-Ctrl`$alpha[, ncol(scr_p1_n$inner_iterations$`PCR-Neg-Ctrl`$alpha)]
+# 0% well leakage in plate 1 new library prep method
+```
+
+```{r}
+decon_p1_o <- scr_p1_o$decontaminated_samples
+decon_p1_n <- scr_p1_n$decontaminated_samples
+write.csv(decon_p1_o, "2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv") #save each of these as CSV file to then be able to put back together
+write.csv(decon_p1_n, "2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv")
+
+#decon_p1_o <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv", row.names = 1) %>% as.matrix()
+#decon_p2_n <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv", row.names = 1) %>% as.matrix()
+```
+
+## Phase2 SCRuB - Extraction Neg Ctrl
+### Run SCRuB
+* Running SCRuB with spatial (well location) information. Done by plate.
+```{r}
+#scrub DNA plates (individually) by DNA extraction controls
+scr_p1_ex_o <- SCRuB(mat_p1_o, meta_p1_o, c("Ex-Neg-Ctrl") )
+scr_p1_ex_n <- SCRuB(mat_p1_n, meta_p1_n, c("Ex-Neg-Ctrl") ) 
+```
+## Saving and loading Scrubbed files
+```{r}
+#save(scr_p1_ex_o, file="scrubOut_p1_ex_oldlibprep.RData")
+#save(scr_p1_ex_n, file="scrubOut_p1_ex_newlibprep.RData")
+
+load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_ex_oldlibprep.RData")
+load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_ex_newlibprep.RData")
+```
+
+## Examine output
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+# Estimated contamination level
+scr_p1_ex_o$p %>% boxplot()  #read this as closer to 1 = less contaminated
+```
+```{r}
+median(100-(scr_p1_ex_o$p*100))  #2.09% 
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_ex_n$p %>% boxplot()
+```
+```{r}
+median(100-(scr_p1_ex_n$p*100))  #0.49% contamination
+```
+
+## Estimated realtive abundance of the contamination community
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+#  index = 1 to 7781 ASVs in this dataset
+scr_p1_ex_o$inner_iterations$`Ex-Neg-Ctrl`$gamma %>% plot() 
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_ex_n$inner_iterations$`Ex-Neg-Ctrl`$gamma %>% plot() 
+```
+
+## Estimate well-to-well leakage
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+scr_p1_ex_o$inner_iterations$`Ex-Neg-Ctrl`$alpha[, ncol(scr_p1_ex_o$inner_iterations$`Ex-Neg-Ctrl`$alpha)]
+# 0.94% well-to-well leakage in plate 1
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_ex_n$inner_iterations$`Ex-Neg-Ctrl`$alpha[, ncol(scr_p1_ex_n$inner_iterations$`Ex-Neg-Ctrl`$alpha)]
+# 0.78% well leakage in plate 2
+```
+
+```{r}
+decon_p1_ex_o <- scr_p1_ex_o$decontaminated_samples
+decon_p1_ex_n <- scr_p1_ex_n$decontaminated_samples
+write.csv(decon_p1_ex_o, "2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv") #save each of these as CSV file to then be able to put back together
+write.csv(decon_p1_ex_n, "2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv")
+
+#decon_p1_ex_o <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
+#decon_p1_ex_n <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
+```
+
+# Output post-SCRuB 
+```{r}
+# create main datsets - putting plates back together again - combining PCR and Ex SCRuB
+mat_final <- rbind(decon_p1_o, decon_p1_n)
+ps_curated_0 <- subset_samples(ps_22b_ms, sample_names(ps_22b_ms) %in% rownames(mat_final))
+ps_curated <- ps_curated_0
+mat_table_final <- otu_table(mat_final, taxa_are_rows = FALSE)
+otu_table(ps_curated) <- mat_table_final
+
+mat_final_ex <- rbind(decon_p1_ex_o, decon_p1_ex_n)
+ps_curated_0_ex <- subset_samples(ps_22b_ms, sample_names(ps_22b_ms) %in% rownames(mat_final_ex))
+ps_curated_ex <- ps_curated_0_ex
+mat_table_final_ex <- otu_table(mat_final_ex, taxa_are_rows = FALSE)
+otu_table(ps_curated_ex) <- mat_table_final_ex
+
+ps_curated_0@otu_table["BM-249",1:10] #prior SCRuB
+```
+
+## Seeing how ASV reads change per sample before and after scrubbing
+### Plate 1 Old
+```{r}
+ps_curated@otu_table["BM-249",1:10]   #post SCRuB
+```
+
+### Plate 1 Old
+```{r}
+ps_curated_0@otu_table["BM-34",1:10] #prior SCRuB
+```
+```{r}
+ps_curated@otu_table["BM-34",1:10]   #post SCRuB
+```
+
+### Plate 1 New
+```{r}
+ps_curated_0@otu_table["BM-249n",1:10] #prior SCRuB
+```
+```{r}
+ps_curated@otu_table["BM-249n",1:10]   #post SCRuB
+```
+
+### Plate 1 New
+```{r}
+ps_curated_0@otu_table["BM-34n",1:10] #prior SCRuB
+```
+```{r}
+ps_curated@otu_table["BM-34n",1:10]   #post SCRuB
+```
+
+### Plate 1 Old Ex
+```{r}
+ps_curated_0_ex@otu_table["BM-249",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_ex@otu_table["BM-249",1:10]   #post SCRuB
+```
+
+### Plate 1 Old Ex
+```{r}
+ps_curated_0_ex@otu_table["BM-34",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_ex@otu_table["BM-34",1:10]   #post SCRuB
+```
+
+### Plate 1 New Ex
+```{r}
+ps_curated_0_ex@otu_table["BM-249n",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_ex@otu_table["BM-249n",1:10]   #post SCRuB
+```
+
+### Plate 1 New Ex
+```{r}
+ps_curated_0_ex@otu_table["BM-34n",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_ex@otu_table["BM-34n",1:10]   #post SCRuB
+```
+
+```{r}
+row_sums <- rowSums(ps_curated_0@otu_table) #prior scrub
+print(row_sums)
+```
+```{r}
+row_sums1 <- rowSums(ps_curated@otu_table) #post scrub
+print(row_sums1)
+```
+
+```{r}
+row_sums2 <- rowSums(ps_curated_0_ex@otu_table) #prior scrub
+print(row_sums2)
+```
+```{r}
+row_sums3 <- rowSums(ps_curated_ex@otu_table) #post scrub
+print(row_sums3)
+```
+
+```{r}
+# filter out taxa reduced to 0 reads (1305 ASVs, leaves 3364 out of 4669)
+ps_curated <- filter_taxa(ps_curated, function(x) sum(x) > 0, TRUE)
+#ps_22b_ms
+ps_curated
+
+# filter out taxa reduced to 0 reads (1325 ASVs, leaves 3344 out of 4669)
+ps_curated_ex <- filter_taxa(ps_curated_ex, function(x) sum(x) > 0, TRUE)
+ps_curated_ex
+```
+
+### Remove positive control samples
+```{r}
+ps_curated <- prune_samples(sample_names(ps_curated) != "P1-Pos-Ctrl", ps_curated)
+ps_curated <- prune_samples(sample_names(ps_curated) != "P1-Pos-Ctrln", ps_curated)
+ps_curated@sam_data
+```
+```{r}
+ps_curated_ex <- prune_samples(sample_names(ps_curated_ex) != "P1-Pos-Ctrl", ps_curated_ex)
+ps_curated_ex <- prune_samples(sample_names(ps_curated_ex) != "P1-Pos-Ctrln", ps_curated_ex)
+ps_curated_ex@sam_data
+```
+
+## Merging SCRuBBED 2022 plates
+### Merging Ex Neg Ctrl and PCR Neg Ctrl SCRuB
+```{r}
+#this will merge the samples with the same name - they will be added together
+ps_22b_merge <- merge_phyloseq(ps_curated, ps_curated_ex)
+ps_22b_merge
+sample_data(ps_22b_merge)
+#this combines PCR and Ex neg control scrub results, basically negating SCRuB
+#will re-run together as a combined scrub
+```
+
+## 2022b Combined SCRuB
+```{r}
+## Running SCRuB of both Ex Neg and PCR Neg Ctrl at one time
+## According to SCRuB tutorial, run SCRuB of first instance of contamination first
+
+#scrub DNA plates (individually) by DNA extraction and PCR controls
+scr_p1_comb_o <- SCRuB(mat_p1_o, meta_p1_o, control_order =  c("Ex-Neg-Ctrl", "PCR-Neg-Ctrl") )
+scr_p1_comb_n <- SCRuB(mat_p1_n, meta_p1_n, control_order =  c("Ex-Neg-Ctrl", "PCR-Neg-Ctrl") )
+```
+
+## Saving and loading Scrubbed files
+```{r}
+#save(scr_p1_comb_o, file="scrubOut_p1_comb_oldlibprep.RData")
+#save(scr_p1_comb_n, file="scrubOut_p2_comb_newlibprep.RData")
+
+load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_comb_oldlibprep.RData")
+load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p2_comb_newlibprep.RData")
+```
+
+## Examine output
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+# Estimated contamination level
+scr_p1_comb_o$p %>% boxplot()  #read this as closer to 1 = less contaminated
+```
+```{r}
+median(100-(scr_p1_comb_o$p*100))  #2.21% 
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_comb_n$p %>% boxplot()
+```
+```{r}
+median(100-(scr_p1_comb_n$p*100))  #0.57% contamination
+```
+
+## Estimated realtive abundance of the contamination community
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+#  index = 1 to 7781 ASVs in this dataset
+scr_p1_comb_o$inner_iterations$`Ex-Neg-Ctrl`$gamma %>% plot()
+scr_p1_comb_o$inner_iterations$`PCR-Neg-Ctrl`$gamma %>% plot()
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_comb_n$inner_iterations$`Ex-Neg-Ctrl`$gamma %>% plot()
+scr_p1_comb_n$inner_iterations$`PCR-Neg-Ctrl`$gamma %>% plot()
+```
+
+## Estimate well-to-well leakage
+### 2022b Plate 1 Old Library Prep Method
+```{r}
+scr_p1_comb_o$inner_iterations$`Ex-Neg-Ctrl`$alpha[, ncol(scr_p1_comb_o$inner_iterations$`Ex-Neg-Ctrl`$alpha)]
+# 0.94% well-to-well leakage in plate 1
+scr_p1_comb_o$inner_iterations$`PCR-Neg-Ctrl`$alpha[, ncol(scr_p1_comb_o$inner_iterations$`PCR-Neg-Ctrl`$alpha)]
+# 0.98% well-to-well leakage in plate 1
+```
+### 2022b Plate 1 New Library Prep Method
+```{r}
+scr_p1_comb_n$inner_iterations$`Ex-Neg-Ctrl`$alpha[, ncol(scr_p1_comb_n$inner_iterations$`Ex-Neg-Ctrl`$alpha)]
+# 0.78% well leakage in plate 2
+scr_p1_comb_n$inner_iterations$`PCR-Neg-Ctrl`$alpha[, ncol(scr_p1_comb_n$inner_iterations$`PCR-Neg-Ctrl`$alpha)]
+# 0% well leakage in plate 2
+```
+
+```{r}
+decon_p1_comb_o <- scr_p1_comb_o$decontaminated_samples
+decon_p1_comb_n <- scr_p1_comb_n$decontaminated_samples
+write.csv(decon_p1_comb_o, "2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv") #save each of these as CSV file to then be able to put back together
+write.csv(decon_p1_comb_n, "2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv")
+
+#decon_p1_comb_o <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
+#decon_p1_comb_n <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
+```
+
+# Output post-SCRuB 
+```{r}
+# create main datsets - putting plates back together again - combining PCR and Ex SCRuB
+mat_final_comb <- rbind(decon_p1_comb_o, decon_p1_comb_n)
+ps_curated_0_comb <- subset_samples(ps_22b_ms, sample_names(ps_22b_ms) %in% rownames(mat_final_comb))
+ps_curated_comb <- ps_curated_0_comb
+mat_table_final_comb <- otu_table(mat_final_comb, taxa_are_rows = FALSE)
+otu_table(ps_curated_comb) <- mat_table_final_comb
+```
+
+### Plate 1 Combined Old
+```{r}
+ps_curated_0_comb@otu_table["BM-249",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_comb@otu_table["BM-249",1:10]   #post SCRuB
+```
+
+### Plate 1 Combined Old
+```{r}
+ps_curated_0_comb@otu_table["BM-34",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_comb@otu_table["BM-34",1:10]   #post SCRuB
+```
+
+### Plate 1 Combined New
+```{r}
+ps_curated_0_comb@otu_table["BM-249n",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_comb@otu_table["BM-249n",1:10]   #post SCRuB
+```
+
+### Plate 1 Combined New
+```{r}
+ps_curated_0_comb@otu_table["BM-34n",1:10] #prior SCRuB
+```
+```{r}
+ps_curated_comb@otu_table["BM-34n",1:10]   #post SCRuB
+```
+
+```{r}
+row_sums4 <- rowSums(ps_curated_0_comb@otu_table) #prior scrub
+print(row_sums4)
+```
+```{r}
+row_sums5 <- rowSums(ps_curated_comb@otu_table) #post scrub
+print(row_sums5)
+```
+
+```{r}
+# filter out taxa reduced to 0 reads (1938 ASVs, leaves 2731 out of 4669)
+ps_curated_comb <- filter_taxa(ps_curated_comb, function(x) sum(x) > 0, TRUE)
+#ps_22b_ms
+ps_curated_comb
+```
+
+### Removing Positive Controls
+```{r}
+ps_curated_comb <- prune_samples(sample_names(ps_curated_comb) != "P1-Pos-Ctrl", ps_curated_comb)
+ps_curated_comb <- prune_samples(sample_names(ps_curated_comb) != "P1-Pos-Ctrln", ps_curated_comb)
+ps_curated_comb@sam_data
+```
+
+## Saving Files
+```{r}
+dna <- Biostrings::DNAStringSet(taxa_names(ps_curated_comb))
+names(dna) <- taxa_names(ps_curated_comb)
+ps_22b_scrub <- merge_phyloseq(ps_curated_comb, dna)
+taxa_names(ps_22b_scrub) <- paste0("ASV", seq(ntaxa(ps_22b_scrub)))
+ps_22b_scrub
+
+saveRDS(ps_22b_scrub,file.path(path,"2022b_miseq.ps.rds"))
+```
+
+```{r}
+# saving files
+scrub_meta <- (as(sample_data(ps_22b_scrub), "data.frame"))
+scrub_taxa <- (as(otu_table(ps_22b_scrub), "matrix"))
+# # write out data
+write.csv(scrub_meta, "2022b_miseq_metadata_postSCRuB_comb.csv")
+write.csv(scrub_taxa, "2022b_miseq_taxatable_postSCRuB_nextseq_comb.csv")
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+
+###### end

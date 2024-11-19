@@ -1,0 +1,288 @@
+---
+title: "2022b Plate1 Miseq vs NextSeq Beta Diversity Analysis"
+author: "Brooke Benz"
+date: "2024-06-11"
+output:
+  html_notebook: 20240611_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_BRB
+  pdf_document: 20240611_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+```{r}
+##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
+library(phyloseq); packageVersion("phyloseq") #1.38.0
+library(viridis)
+library(vegan); packageVersion("vegan") #2.6.4
+library("DESeq2")
+library(dplyr)
+library(ggplot2)
+library(tibble)
+
+## Loading functions and setting path
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity"
+
+#set seed
+#runif(1, min = 0, max = 1000)
+set.seed(617)
+
+sxl_color <- c("#516888", "#C9DACA", "#F3AE6D") # colors from nationalparkcolors package
+
+
+#Load functions
+source("/Users/brookeb/Documents/R/code/multiplot.R")
+
+#add 'not in' function
+`%nin%` = Negate(`%in%`)
+
+# geometric mean
+gm_mean_protected <- function(x) {
+  if (all(x == 0)) {
+    return (0)
+  }
+  exp(mean(log(x[x != 0])))
+}
+
+# function for PCoA ellipses - 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100)   {
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))    }
+```
+
+## Loading in PS Objects
+```{r}
+ps_22b_p1 <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1
+
+ps_22b_p1_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1_rare
+```
+
+```{r}
+# # DESeq2
+ddsb <- phyloseq_to_deseq2(ps_22b_p1, ~ 1)
+gmMeansb <- apply(counts(ddsb), 1, gm_mean_protected)
+ddsb <- estimateSizeFactors(ddsb, type = 'ratio', geoMeans = gmMeansb)
+ddsb <- estimateDispersions(ddsb, fitType = "local")
+saveRDS(ddsb, "20240612_2022b_p1_miseq_nextseq_dds.RData")
+ddsb <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240612_2022b_p1_miseq_nextseq_dds.RData")
+
+## VST
+vstb <- getVarianceStabilizedData(ddsb)
+vstb <- t(vstb)  #taxa as columns
+
+## Euclidean of VST
+dist.vstb <- vegdist(vstb, method="euclidean")
+# Save the data frame as a CSV file
+dist.vstb_df <- as.data.frame(as.matrix(dist.vstb))
+write.csv(dist.vstb_df, "2022b_plate1_distance_matrix.csv", row.names = TRUE)
+
+pcoa_b <- cmdscale(dist.vstb, eig =TRUE)
+
+explainvarb1 <- round(pcoa_b$eig[1] / sum(pcoa_b$eig), 3) * 100
+explainvarb1 #16
+explainvarb2 <- round(pcoa_b$eig[2] / sum(pcoa_b$eig), 3) * 100 
+explainvarb2 #8.5
+explainvarb3 <- round(pcoa_b$eig[3] / sum(pcoa_b$eig), 3) * 100 
+explainvarb3 #5.6
+
+#Need to run this chunk as entire thing not line by line
+par(mfrow=c(1,1))
+#plots eignevalues thems_updelves
+plot(pcoa_b$eig, xlab = 'PCoA Axis', ylab = 'Eigenvalue', las=1,
+     cex.lab=1.5, pch=16, xlim=c(0,20))  
+#Kaiser-Guttman criterion, average of all eig-vals
+abline(h = mean(pcoa_b$eig), lty=2, lwd=2,col='blue') 
+#scale Total Variance of eigenvalues to 1; cmdscale does not by default
+b.stickb <- bstick(length(pcoa_b$eig), tot.var=sum(pcoa_b$eig))  
+#Broken-Stick Model
+lines(1:length(pcoa_b$eig), b.stickb, type="l", lty=4, lwd=2, col='red') 
+# add legend
+legend("topright", legend=c("Avg. Eigenvalue", "Broken Stick"), lty=c(2,4), bty="n", col=c("blue", "red"))
+```
+
+## 2022b Plate1 by Sequencing Platform and Lib Prep Method
+```{r}
+ellipses.sxl <- data.frame() 
+#loop, 
+#change pcoa.dat$____ to your var name, and same for =g at end
+#change name of ellipses.___ to name of dataframe above
+for(g in levels(pcoa.datb$SxL)){ 
+  ellipses.sxl <- rbind(ellipses.sxl, cbind(as.data.frame(with(
+    pcoa.datb[pcoa.datb$SxL==g,],  
+    veganCovEllipse(cov.wt(cbind(V1, V2),
+         wt=rep(1/length(V1),length(V1)))$cov, 
+         center=c(mean(V1), mean(V2)))   )) , SxL=g))   } 
+
+pcoa_sxl <- ggplot() + coord_equal() + 
+    geom_path(data = ellipses.sxl, aes(x = V1, y = V2, 
+          group = SxL, colour = SxL), linetype = 1,
+          linewidth = 1.1,  
+          show.legend = TRUE) +
+    geom_point(data = pcoa.datb, aes(x = V1, y = V2, 
+          color = factor(SxL)) , size = 2) +
+    scale_colour_manual("", values = sxl_color) +
+    scale_x_continuous(paste("PCoA 1 (", explainvarb1, "%)", sep = "")) +
+    scale_y_continuous(paste("PCoA 2 (", explainvarb2, "%)", sep = "")) +
+    ggtitle("2022b Plate1 Library Prep Method\nEuclidean PCoA") + theme_bw() +
+    theme(legend.key.width = unit(.6, "cm"), axis.title = element_text(size = 12),
+         legend.text=element_text(size=10), legend.title=element_text(size=12),
+         legend.background = element_rect(colour = NA, fill = NA),
+         legend.position = "bottom")
+pcoa_sxl
+ggsave("20240612_2022b_p1_seqxlib_beta_pcoa_Euclidean.png", height = 5, width = 8)
+```
+
+## 2022b Plate1 by Read Depth
+```{r}
+ pcoa_total_reads <- ggplot() + coord_equal() + 
+    geom_path(data = pcoa.datb, aes(x = V1, y = V2, 
+          group = total_reads, colour = total_reads), linetype = 1,
+          linewidth = 1.1,  
+          show.legend = TRUE) +
+    geom_point(data = pcoa.datb, aes(x = V1, y = V2, 
+          color = total_reads) , size = 2) +
+    scale_color_viridis_c(name = "Sequencing Reads", option = "viridis") +
+    scale_x_continuous(paste("PCoA 1 (", explainvarb1, "%)", sep = "")) +
+    scale_y_continuous(paste("PCoA 2 (", explainvarb2, "%)", sep = "")) +
+    ggtitle("2022b Plate1 Library Prep Method\nEuclidean PCoA") + theme_bw() +
+    theme(legend.key.width = unit(.6, "cm"), axis.title = element_text(size = 12),
+         legend.text=element_text(size=10), legend.title=element_text(size=12),
+         legend.background = element_rect(colour = NA, fill = NA),
+         legend.position = "bottom")
+pcoa_total_reads
+ggsave("20240612_2022b_p1_readdepth_beta_pcoa_Euclidean.png", height = 5, width = 8)
+```
+
+### Test Homogeneity of Dispersion of Beta Diversity
+```{r}
+dispersion <- betadisper(dist.vstb, group = data_b$SxL)
+
+TukeyHSD(dispersion) #p-adj values: MiSeq_OldxMiSeq_New=0.2169602; NextSeq_NewxMiSeq_New= <0.001***; NextSeq_NewxMiSeq_Old= <0.001***
+
+plot(dispersion)
+
+ggsave("20241102_2022b_p1_beta_dispersion.png", height = 5, width = 8)
+```
+
+### Stats
+```{r}
+## Check distribution of ASVs
+vstb_df <- as.data.frame(vstb)
+hist(vstb_df$ASV1, main = paste("Histogram of Distance Measures for ASV1:", "ASV1"), xlab = "Distance Measure")
+
+adonis2(vstb ~ SxL * total_reads, method = "euclidean", data = data_b) #P-values: SxL=0.001***; total_reads=0.001***; SxLxtotal_reads=0.001***
+```
+
+## Beta Diversity Plots with Rarefied Data
+```{r}
+data_b_rare <- (as(sample_data(ps_22b_p1_rare), "data.frame"))
+
+# # DESeq2
+ddsb_rare <- phyloseq_to_deseq2(ps_22b_p1_rare, ~ 1)
+gmMeansb_rare <- apply(counts(ddsb_rare), 1, gm_mean_protected)
+ddsb_rare <- estimateSizeFactors(ddsb_rare, type = 'ratio', geoMeans = gmMeansb_rare)
+ddsb_rare <- estimateDispersions(ddsb_rare, fitType = "local")
+saveRDS(ddsb_rare, "20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
+ddsb_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
+
+## Hellinger Transformation
+### takes square root of the sum of an asv divided by sum of all asvs
+counts_rare <- counts(ddsb_rare)
+counts_rare <- t(counts_rare)  #taxa as columns
+htb_rare <- decostand(counts_rare, method = "hellinger")
+
+## Bray of 2022b Rare
+dist.rare <- vegdist(counts_rare, method="bray")
+# Save the data frame as a CSV file
+dist.rare_df <- as.data.frame(as.matrix(dist.rare))
+write.csv(dist.rare_df, "2022b_plate1_rare_distance_matrix.csv", row.names = TRUE)
+
+pcoa_b_rare <- cmdscale(dist.rare, eig =TRUE)
+
+explainvarb1_rare <- round(pcoa_b_rare$eig[1] / sum(pcoa_b_rare$eig), 3) * 100
+explainvarb1_rare #30.9
+explainvarb2_rare <- round(pcoa_b_rare$eig[2] / sum(pcoa_b_rare$eig), 3) * 100 
+explainvarb2_rare #19.2
+explainvarb3_rare <- round(pcoa_b_rare$eig[3] / sum(pcoa_b_rare$eig), 3) * 100 
+explainvarb3_rare #10.3
+
+#Need to run this chunk as entire thing not line by line
+par(mfrow=c(1,1))
+#plots eignevalues themselves
+plot(pcoa_b_rare$eig, xlab = 'PCoA Axis', ylab = 'Eigenvalue', las=1,
+     cex.lab=1.5, pch=16, xlim=c(0,20))  
+#Kaiser-Guttman criterion, average of all eig-vals
+abline(h = mean(pcoa_b_rare$eig), lty=2, lwd=2,col='blue') 
+#scale Total Variance of eigenvalues to 1; cmdscale does not by default
+b.stickb <- bstick(length(pcoa_b_rare$eig), tot.var=sum(pcoa_b_rare$eig))  
+#Broken-Stick Model
+lines(1:length(pcoa_b_rare$eig), b.stickb, type="l", lty=4, lwd=2, col='red') 
+# add legend
+legend("topright", legend=c("Avg. Eigenvalue", "Broken Stick"), lty=c(2,4), bty="n", col=c("blue", "red"))
+```
+
+```{r}
+# create dataframes for use in plots
+PCoAscoresb_rare <- as.data.frame(pcoa_b_rare$points)
+PCoAscoresb_rare$ids <- rownames(PCoAscoresb_rare) 
+#merge the temporary and SbyE dataframes
+pcoa.datb_rare <- merge(PCoAscoresb_rare, data_b_rare, by.x="ids",
+                  by.y="SampleID")
+rownames(pcoa.datb_rare) <- as.character(pcoa.datb_rare$ids)
+
+ellipses.sxl_rare <- data.frame() 
+#loop, 
+#change pcoa.dat$____ to your var name, and same for =g at end
+#change name of ellipses.___ to name of dataframe above
+for(g in levels(pcoa.datb_rare$SxL)){ 
+  ellipses.sxl_rare <- rbind(ellipses.sxl_rare, cbind(as.data.frame(with(
+    pcoa.datb_rare[pcoa.datb_rare$SxL==g,],  
+    veganCovEllipse(cov.wt(cbind(V1, V2),
+         wt=rep(1/length(V1),length(V1)))$cov, 
+         center=c(mean(V1), mean(V2)))   )) , SxL=g))   } 
+
+pcoa_sxl_rare <- ggplot() + coord_equal() + 
+    geom_path(data = ellipses.sxl_rare, aes(x = V1, y = V2, 
+          group = SxL, colour = SxL), linetype = 1,
+          linewidth = 1.1,  
+          show.legend = TRUE) +
+    geom_point(data = pcoa.datb_rare, aes(x = V1, y = V2, 
+          color = factor(SxL)) , size = 2) +
+    scale_colour_manual("", values = sxl_color) +
+    scale_x_continuous(paste("PCoA 1 (", explainvarb1_rare, "%)", sep = "")) +
+    scale_y_continuous(paste("PCoA 2 (", explainvarb2_rare, "%)", sep = "")) +
+    ggtitle("2022b Plate1 Rarefied Library Prep Method\nEuclidean PCoA") + theme_bw() +
+    theme(legend.key.width = unit(.6, "cm"), axis.title = element_text(size = 12),
+         legend.text=element_text(size=10), legend.title=element_text(size=12),
+         legend.background = element_rect(colour = NA, fill = NA),
+         legend.position = "bottom")
+pcoa_sxl_rare
+ggsave("20240613_2022b_p1_rare_seqxlib_beta_pcoa_bray.png", height = 5, width = 8)
+```
+
+### Test Homogeneity of Dispersion of Beta Diversity
+```{r}
+dispersion_rare <- betadisper(dist.rare, group = data_b_rare$SxL)
+
+TukeyHSD(dispersion_rare) #p-adj values: MiseqOldxMiseqNew=0.8725417; NextseqxMiseqNew=0.9928708; NexteqxMiseqOld=0.9186677
+
+plot(dispersion_rare)
+```
+
+### Stats
+```{r}
+adonis2(htb_rare ~ SxL, method = "bray", data = data_b_rare) #p-values: SxL=0.0001***
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end

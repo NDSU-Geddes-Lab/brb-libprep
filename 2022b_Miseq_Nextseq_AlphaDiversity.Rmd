@@ -1,0 +1,142 @@
+---
+title: "2022b Plate1 Miseq vs NextSeq Alpha Diversity Analysis"
+author: "Brooke Benz"
+date: "2024-10-11"
+output:
+  html_notebook: 20241011_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_AlphaDiversity_BRB
+  pdf_document: 20241011_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_AlphaDiversity_BRB
+---
+
+
+* Run using `r version[['version.string']] `.
+---
+
+```{r}
+library(phyloseq); packageVersion("phyloseq") #1.38.0
+library(viridis)
+library(vegan); packageVersion("vegan") #2.6.4
+library("DESeq2")
+library(dplyr)
+library(ggplot2)
+library(tibble)
+
+## Loading functions and setting path
+path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Alpha Diversity"
+
+#set seed
+#runif(1, min = 0, max = 1000)
+set.seed(617)
+
+#add 'not in' function
+`%nin%` = Negate(`%in%`)
+```
+
+## Loading in PS Objects
+```{r}
+ps_22b_p1 <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1
+
+ps_22b_p1_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1_rare
+```
+
+## Comparing Alpha Diversity
+```{r}
+#creating otu matrix for each object
+otu <- (as(otu_table(ps_22b_p1), "matrix"))
+otu_rare <- (as(otu_table(ps_22b_p1_rare), "matrix"))
+
+#creating sample data data frame for each object
+data_b <- (as(sample_data(ps_22b_p1), "data.frame"))
+data_b_rare <- (as(sample_data(ps_22b_p1_rare), "data.frame"))
+
+# sanity check, must be true
+identical(sort(rownames(data_b)), sort(rownames(ps_22b_p1@otu_table)))
+identical(sort(rownames(data_b_rare)), sort(rownames(ps_22b_p1_rare@otu_table)))
+
+# add diversity
+data_b$Rich <- specnumber((ps_22b_p1@otu_table@.Data)) #richness
+data_b$Shannon <- diversity((ps_22b_p1@otu_table@.Data)) #Shannon
+data_b$Simpson <- diversity(ps_22b_p1@otu_table@.Data, index = "simpson") #Simpson
+data_b$sqSimpson <- data_b$Simpson^2
+sample_data(ps_22b_p1) <- data_b
+sample_data(ps_22b_p1)
+
+data_b_rare$Rich <- specnumber((ps_22b_p1_rare@otu_table@.Data)) #richness
+data_b_rare$Shannon <- diversity((ps_22b_p1_rare@otu_table@.Data)) #Shannon
+data_b_rare$Simpson <- diversity(ps_22b_p1_rare@otu_table@.Data, index = "simpson")#Simpson
+data_b_rare$sqSimpson <- data_b_rare$Simpson^2
+sample_data(ps_22b_p1_rare) <- data_b_rare
+sample_data(ps_22b_p1_rare)
+```
+
+### Correlation of Alpha Diversity
+```{r}
+# Extract richness values for each lib prep 
+manual <- subset(data_b, SxL == "MiSeq_Old")
+richness_manual <- manual[, c("SampleID", "Rich", "Shannon")]
+
+auto <- subset(data_b, SxL == "MiSeq_New")
+richness_auto <- auto[, c("SampleID", "Rich", "Shannon")]
+# # write csvs
+write.csv(richness_manual, "2022b_Plate1_miseq_manual_rich_shannon.csv")
+write.csv(richness_auto, "2022b_Plate1_miseq_automated_rich_shannon.csv")
+# # manually go in and check that all sample names match between manual and automated
+# # make new csv file with SampleID, manual richness and shannon and automated richness and shannon
+
+miseq_correlation <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_Plate1_miseq_richness_shannon.csv")
+
+#linear regression model
+lm_rich <- lm(auto_rich ~ manual_rich, data = miseq_correlation)
+summary(lm_rich)
+# y = 0.60x + 24.2
+# # make sure lm equation matches that given on figure
+
+# # stat_regline_equation - adds regression line eqution and R2 value
+  # # model fitted using lm function
+
+ggplot(miseq_correlation, aes(x = manual_rich, y = auto_rich)) +
+  geom_point(color = "#64A8FF") +  # Scatterplot
+  stat_regline_equation(aes(label =  after_stat(paste(eq.label, adj.rr.label, sep = "*\", \"*"))),
+                        color = "black", label.x.npc = 0.95,
+                        label.y.npc = 0.95, hjust = 1) +
+  geom_smooth(method = 'lm', formula = y ~ x, se = TRUE, linewidth = 0.5, color = "black") +
+  labs(x = "MiSeq Manual Richness", y = "MiSeq Automated Richness",
+       title = "Correlation of Richness Between Library Prep Method") +
+  theme_minimal()
+
+ggsave("20241012_2022b_Plate1_miseq_rich_correlation.png", height = 5, width = 7)
+```
+
+### Shannon Diversity Correlation
+```{r}
+#linear regression model
+lm_shann <- lm(auto_shannon ~ manual_shannon, data = miseq_correlation)
+summary(lm_shann)
+# y = 0.88x + 0.35
+# # make sure lm equation matches that given on figure
+
+# # stat_regline_equation - adds regression line eqution and R2 value
+  # # model fitted using lm function
+
+ggplot(miseq_correlation, aes(x = manual_shannon, y = auto_shannon)) +
+  geom_point(color = "#64A8FF") +  # Scatterplot
+  stat_regline_equation(aes(label =  after_stat(paste(eq.label, adj.rr.label, sep = "*\", \"*"))),
+                        color = "black", label.x.npc = 0.95,
+                        label.y.npc = 0.95, hjust = 1) +
+  geom_smooth(method = 'lm', formula = y ~ x, se = TRUE, linewidth = 0.5, color = "black") +
+  labs(x = "MiSeq Manual Richness", y = "MiSeq Automated Richness",
+       title = "Correlation of Shannon Between Library Prep Method") +
+  theme_minimal()
+
+ggsave("20241012_2022b_Plate1_miseq_shannon_correlation.png", height = 5, width = 7)
+```
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+###### end
