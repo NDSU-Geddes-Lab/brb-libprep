@@ -1,12 +1,14 @@
 ---
-title: "2022 DADA2 Trimming to 251"
+title: "2022b NextSeq DADA2"
 author: "Brooke Benz"
 date: "2024-5-14"
 output:
   html_notebook: 20240513_BarleyMicrobiome_dada2_2022samples_BRB
   pdf_document: 20240513_BarleyMicrobiome_dada2_2022samples_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU and Eglantina Lopez-Echartea NDSU
 
+## Purpose: Perform DADA2 to process sequencing data. Removes low-quality reads, generate ASVs, assign taxonomy, and remove chloroplast, mitochondrial, and Eukaryota sequences.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -22,7 +24,7 @@ set.seed(617)
 
 ## Load and Organize Data
 ```{r}
-path <- "/Users/brookeb/Documents/R/FastQFiles/2022Plates/fastq" # CHANGE ME to the directory containing the fastq files.
+path <- "~/Documents/R/FastQFiles/2022Plates/fastq" # CHANGE ME to the directory containing the fastq files.
 
 list.files(path)
 ```
@@ -269,7 +271,8 @@ write.csv(track, file.path(path2, "2022b_trimmed251_tracksanity.csv"))
 
 ## Assign Taxonomy
 ```{r}
-taxa <- assignTaxonomy(seqtab.nochim, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+# Assign taxonomy using the Silva database
+taxa <- assignTaxonomy(seqtab.nochim, "~/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
 taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
@@ -280,7 +283,7 @@ head(taxa.print)
 #remove chloroplast
 is.chloro <- taxa[,"Order"] %in% "Chloroplast"
 seqtab.nochloro <- seqtab.nochim[,!is.chloro]
-taxanochloro <- assignTaxonomy(seqtab.nochloro, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+taxanochloro <- assignTaxonomy(seqtab.nochloro, "~/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
 taxa.print <- taxanochloro
 rownames(taxa.print) <- NULL
 head(taxa.print)
@@ -310,7 +313,7 @@ dim(taxanochloro)
 #Remove mitochondria
 is.mito <- taxanochloro[,"Family"] %in% "Mitochondria"
 seqtab.nochloronomito <- seqtab.nochloro[,!is.mito]
-taxanochloronomito <- assignTaxonomy(seqtab.nochloronomito, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+taxanochloronomito <- assignTaxonomy(seqtab.nochloronomito, "~/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
 taxa.print <- taxanochloronomito # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
@@ -344,7 +347,7 @@ dim(taxanochloronomito)
 #Remove Eukaryota
 is.euk <- taxanochloronomito[,"Kingdom"] %in% "Eukaryota"
 seqtab.nochloronomitoeuk <- seqtab.nochloronomito[,!is.euk]
-taxanochloronomitoeuk <- assignTaxonomy(seqtab.nochloronomitoeuk, "/Users/brookeb/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+taxanochloronomitoeuk <- assignTaxonomy(seqtab.nochloronomitoeuk, "~/Documents/SilvaTaxaFile/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
 taxa.print <- taxanochloronomitoeuk # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)

@@ -6,7 +6,9 @@ output:
   html_notebook: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
   pdf_document: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU and Briana K. Whitaker USDA-ARS
 
+## Purpose: To analyze read depth distribution of each library preparation method and sequencing platform. Also calculate mean, variance, and skewness values.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -23,7 +25,7 @@ library(moments)
 library(scales)
 
 ## Loading functions and setting path
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Rarefaction Curves"
+path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Rarefaction Curves"
 
 sxl_color <- c("#516888", "#C9DACA", "#F3AE6D") # colors from nationalparkcolors package
 
@@ -34,7 +36,7 @@ set.seed(617)
 
 ## Loading in PS Objects
 ```{r}
-ps_22b_msvns <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_msvns <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ps_22b_msvns
 ```
 ## Read Depth

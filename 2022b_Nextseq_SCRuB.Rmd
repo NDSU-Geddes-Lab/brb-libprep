@@ -1,26 +1,22 @@
 ---
-title: "2022b NextSeq SCRuB of Plates 1-4"
+title: "2022b NextSeq SCRuB"
 author: "Brooke Benz"
 date: "2024-05-15"
 output:
   html_notebook: 20240515_BarleyMicrobiome_SCRuB_2022b_nextseq_BRB
   pdf_document: 20240515_BarleyMicrobiome_SCRuB_2022b_nextseq_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU and Briana K. Whitaker USDA-ARS
 
+## Purpose: To remove contaminating sequences from samples using the SCRuB package.
 
 * Run using `r version[['version.string']] `.
 ---
 #### Load Packages, set path to data (hidden)
 ```{r, echo=FALSE, results='hide', include=FALSE} 
-#install.packages("glmnet") #when installing glmnet input no for do you wnat to install from sources the package which needs compilation
-#install.packages("torch") #when installing select Yes when prompted
-
 x<-c("ggplot2", "phyloseq", "Biostrings", "dplyr", "tidyverse", "glmnet", "torch")  
 lapply(x, require, character.only = TRUE)
 
-#require(devtools)
-#devtools::install_github("shenhav-and-korem-labs/SCRuB")
-#require(SCRuB)
 library(SCRuB)
 
 #add 'not in' function
@@ -33,10 +29,10 @@ set.seed(617)
 theme_set(theme_bw(base_size=16)) 
 theme_update(panel.grid.major=element_line(0), panel.grid.minor=element_line(0))
 
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB"
+path <- "~/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB"
 
 # load merged phyloseq object 
-ps_22b <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/Merging PS Objects/2022b_trim251.ps.rds")
+ps_22b <- readRDS("~/Documents/R/Final Codes/2022/2022_Nextseq/Merging PS Objects/2022b_trim251.ps.rds")
 ps_22b
 ```
 ## Changing the metadata files
@@ -125,10 +121,10 @@ scr_p4 <- SCRuB(mat_p4, meta_p4, c("PCR-Neg-Ctrl") )
 #save(scr_p3, file="scrubOut_p3.RData")
 #save(scr_p4, file="scrubOut_p4.RData")
 
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p1.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p2.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p3.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p4.RData")
+load("~/scrubOut_p1.RData")
+load("~/scrubOut_p2.RData")
+load("~/scrubOut_p3.RData")
+load("~/scrubOut_p4.RData")
 ```
 
 ## Examine output
@@ -213,10 +209,10 @@ write.csv(decon_p2, "2022b_ScrubDecontaminatedSamples_p2_pcr.csv")
 write.csv(decon_p3, "2022b_ScrubDecontaminatedSamples_p3_pcr.csv")
 write.csv(decon_p4, "2022b_ScrubDecontaminatedSamples_p4_pcr.csv")
 
-#decon_p1 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ScrubDecontaminatedSamples_p1_pcr.csv", row.names = 1) %>% as.matrix()
-#decon_p2 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ScrubDecontaminatedSamples_p2_pcr.csv", row.names = 1) %>% as.matrix()
-#decon_p3 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ScrubDecontaminatedSamples_p3_pcr.csv", row.names = 1) %>% as.matrix()
-#decon_p4 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ScrubDecontaminatedSamples_p4_pcr.csv", row.names = 1) %>% as.matrix()
+#decon_p1 <- read.csv("~/2022b_ScrubDecontaminatedSamples_p1_pcr.csv", row.names = 1) %>% as.matrix()
+#decon_p2 <- read.csv("~/2022b_ScrubDecontaminatedSamples_p2_pcr.csv", row.names = 1) %>% as.matrix()
+#decon_p3 <- read.csv("~/2022b_ScrubDecontaminatedSamples_p3_pcr.csv", row.names = 1) %>% as.matrix()
+#decon_p4 <- read.csv("~/2022b_ScrubDecontaminatedSamples_p4_pcr.csv", row.names = 1) %>% as.matrix()
 ```
 
 ## Phase2 SCRuB - Extraction Neg Ctrl
@@ -236,10 +232,10 @@ scr_p4_ex <- SCRuB(mat_p4, meta_p4, c("Ex-Neg-Ctrl") )
 #save(scr_p3_ex, file="scrubOut_p3_ex.RData")
 #save(scr_p4_ex, file="scrubOut_p4_ex.RData")
 
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p1_ex.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p2_ex.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p3_ex.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p4_ex.RData")
+load("~/scrubOut_p1_ex.RData")
+load("~/scrubOut_p2_ex.RData")
+load("~/scrubOut_p3_ex.RData")
+load("~/scrubOut_p4_ex.RData")
 ```
 
 ## Examine output
@@ -324,10 +320,10 @@ write.csv(decon_p2_ex, "2022b_ExNegCtrl_ScrubDecontaminatedSamples_p2.csv")
 write.csv(decon_p3_ex, "2022b_ExNegCtrl_ScrubDecontaminatedSamples_p3.csv")
 write.csv(decon_p4_ex, "2022b_ExNegCtrl_ScrubDecontaminatedSamples_p4.csv")
 
-#decon_p1_ex <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p1.csv", row.names = 1) %>% as.matrix()
-#decon_p2_ex <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p2.csv", row.names = 1) %>% as.matrix()
-#decon_p3_ex <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p3.csv", row.names = 1) %>% as.matrix()
-#decon_p4_ex <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p4.csv", row.names = 1) %>% as.matrix()
+#decon_p1_ex <- read.csv("~/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p1.csv", row.names = 1) %>% as.matrix()
+#decon_p2_ex <- read.csv("~/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p2.csv", row.names = 1) %>% as.matrix()
+#decon_p3_ex <- read.csv("~/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p3.csv", row.names = 1) %>% as.matrix()
+#decon_p4_ex <- read.csv("~/2022b_ExNegCtrl_ScrubDecontaminatedSamples_p4.csv", row.names = 1) %>% as.matrix()
 ```
 
 # Output post-SCRuB 
@@ -483,10 +479,10 @@ scr_p4_comb <- SCRuB(mat_p4, meta_p4, control_order =  c("Ex-Neg-Ctrl", "PCR-Neg
 #save(scr_p3_comb, file="scrubOut_p3_comb.RData")
 #save(scr_p4_comb, file="scrubOut_p4_comb.RData")
 
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p1_comb.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p2_comb.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p3_comb.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/scrubOut_p4_comb.RData")
+load("~/scrubOut_p1_comb.RData")
+load("~/scrubOut_p2_comb.RData")
+load("~/scrubOut_p3_comb.RData")
+load("~/scrubOut_p4_comb.RData")
 ```
 
 ## Examine output
@@ -583,10 +579,10 @@ write.csv(decon_p2_comb, "2022b_combNegCtrl_ScrubDecontaminatedSamples_p2.csv")
 write.csv(decon_p3_comb, "2022b_combNegCtrl_ScrubDecontaminatedSamples_p3.csv")
 write.csv(decon_p4_comb, "2022b_combNegCtrl_ScrubDecontaminatedSamples_p4.csv")
 
-#decon_p1 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_combNegCtrl_ScrubDecontaminatedSamples_p1.csv", row.names = 1) %>% as.matrix()
-#decon_p2 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_combNegCtrl_ScrubDecontaminatedSamples_p2.csv", row.names = 1) %>% as.matrix()
-#decon_p3 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_combNegCtrl_ScrubDecontaminatedSamples_p3.csv", row.names = 1) %>% as.matrix()
-#decon_p4 <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Nextseq/SCRuB/2022b_combNegCtrl_ScrubDecontaminatedSamples_p4.csv", row.names = 1) %>% as.matrix()
+#decon_p1 <- read.csv("~/2022b_combNegCtrl_ScrubDecontaminatedSamples_p1.csv", row.names = 1) %>% as.matrix()
+#decon_p2 <- read.csv("~/2022b_combNegCtrl_ScrubDecontaminatedSamples_p2.csv", row.names = 1) %>% as.matrix()
+#decon_p3 <- read.csv("~/2022b_combNegCtrl_ScrubDecontaminatedSamples_p3.csv", row.names = 1) %>% as.matrix()
+#decon_p4 <- read.csv("~/2022b_combNegCtrl_ScrubDecontaminatedSamples_p4.csv", row.names = 1) %>% as.matrix()
 ```
 
 # Output post-SCRuB 

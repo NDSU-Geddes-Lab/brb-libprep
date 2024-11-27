@@ -6,7 +6,9 @@ output:
   html_notebook: 20240515_2022b_QubitvPicoGree_BRB
   pdf_document: 20240515_2022b_QubitvPicoGreen_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU
 
+## Purpose: To correlate the manual and automated quantification methods.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -16,14 +18,14 @@ output:
 library(ggplot2)
 library(ggpubr)
 
-path <- "/Users/brookeb/Documents/Barley Microbiome Project/2022 Barley Microbiome"
+path <- "~/Documents/Barley Microbiome Project/2022 Barley Microbiome"
 
 set.seed(617)
 ```
 
 ## Loading Files
 ```{r}
-ng <- read.csv("/Users/brookeb/Documents/Barley Microbiome Project/2022 Barley Microbiome/2022Plate1_nguL_QubitvPicoGreen.csv")
+ng <- read.csv("~/Documents/Barley Microbiome Project/2022 Barley Microbiome/2022Plate1_nguL_QubitvPicoGreen.csv")
 ```
 
 ## Plotting 

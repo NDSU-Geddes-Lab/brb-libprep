@@ -6,7 +6,9 @@ output:
   html_notebook: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
   pdf_document: 20240719_BarleyMicrobiome_2022b_miseq_nextseq_rarefactioncurves_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU and Eglantina Lopez-Echartea NDSU
 
+## Purpose: To generate rarefaction curves and rarefy the phyloseq object.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -22,7 +24,7 @@ library(moments)
 library(scales)
 
 ## Loading functions and setting path
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Rarefaction Curves"
+path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Rarefaction Curves"
 
 #set seed
 #runif(1, min = 0, max = 1000)
@@ -31,7 +33,7 @@ set.seed(617)
 
 ## Loading in PS Objects
 ```{r}
-ps_22b_msvns <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_msvns <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ps_22b_msvns
 ```
 

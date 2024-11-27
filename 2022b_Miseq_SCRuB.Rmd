@@ -1,12 +1,14 @@
 ---
-title: "2022b MiSeq SCRuB of Plate 1"
+title: "2022b MiSeq SCRuB"
 author: "Brooke Benz"
 date: "2024-06-10"
 output:
   html_notebook: 20240610_BarleyMicrobiome_SCRuB_2022b_miseq_BRB
   pdf_document: 20240610_BarleyMicrobiome_SCRuB_2022b_miseq_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU and Briana K. Whitaker USDA-ARS
 
+## Purpose: To remove contaminating sequences from samples using the SCRuB package.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -34,10 +36,10 @@ set.seed(617)
 theme_set(theme_bw(base_size=16)) 
 theme_update(panel.grid.major=element_line(0), panel.grid.minor=element_line(0))
 
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB"
+path <- "~/2022_Miseq/SCRuB"
 
 # load merged phyloseq object 
-ps_22b_ms <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Merging PS Objects/2022b_Plate1_miseq.ps.rds")
+ps_22b_ms <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Merging PS Objects/2022b_Plate1_miseq.ps.rds")
 ps_22b_ms
 ```
 ## Changing the metadata files
@@ -105,8 +107,8 @@ scr_p1_n <- SCRuB(mat_p1_n, meta_p1_n, c("PCR-Neg-Ctrl") )
 #save(scr_p1_o, file="scrubOut_p1_oldlibprep.RData")
 #save(scr_p1_n, file="scrubOut_p1_newlibprep.RData")
 
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_oldlibprep.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_newlibprep.RData")
+load("~/scrubOut_p1_oldlibprep.RData")
+load("~/scrubOut_p1_newlibprep.RData")
 ```
 
 ## Examine output
@@ -155,8 +157,8 @@ decon_p1_n <- scr_p1_n$decontaminated_samples
 write.csv(decon_p1_o, "2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv") #save each of these as CSV file to then be able to put back together
 write.csv(decon_p1_n, "2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv")
 
-#decon_p1_o <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv", row.names = 1) %>% as.matrix()
-#decon_p2_n <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv", row.names = 1) %>% as.matrix()
+#decon_p1_o <- read.csv("~/2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv", row.names = 1) %>% as.matrix()
+#decon_p2_n <- read.csv("~/2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv", row.names = 1) %>% as.matrix()
 ```
 
 ## Phase2 SCRuB - Extraction Neg Ctrl
@@ -172,8 +174,8 @@ scr_p1_ex_n <- SCRuB(mat_p1_n, meta_p1_n, c("Ex-Neg-Ctrl") )
 #save(scr_p1_ex_o, file="scrubOut_p1_ex_oldlibprep.RData")
 #save(scr_p1_ex_n, file="scrubOut_p1_ex_newlibprep.RData")
 
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_ex_oldlibprep.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_ex_newlibprep.RData")
+load("~/scrubOut_p1_ex_oldlibprep.RData")
+load("~/scrubOut_p1_ex_newlibprep.RData")
 ```
 
 ## Examine output
@@ -222,8 +224,8 @@ decon_p1_ex_n <- scr_p1_ex_n$decontaminated_samples
 write.csv(decon_p1_ex_o, "2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv") #save each of these as CSV file to then be able to put back together
 write.csv(decon_p1_ex_n, "2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv")
 
-#decon_p1_ex_o <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
-#decon_p1_ex_n <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
+#decon_p1_ex_o <- read.csv("~/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
+#decon_p1_ex_n <- read.csv("~/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
 ```
 
 # Output post-SCRuB 
@@ -373,8 +375,8 @@ scr_p1_comb_n <- SCRuB(mat_p1_n, meta_p1_n, control_order =  c("Ex-Neg-Ctrl", "P
 #save(scr_p1_comb_o, file="scrubOut_p1_comb_oldlibprep.RData")
 #save(scr_p1_comb_n, file="scrubOut_p2_comb_newlibprep.RData")
 
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p1_comb_oldlibprep.RData")
-load("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/scrubOut_p2_comb_newlibprep.RData")
+load("~/scrubOut_p1_comb_oldlibprep.RData")
+load("~/scrubOut_p2_comb_newlibprep.RData")
 ```
 
 ## Examine output
@@ -429,8 +431,8 @@ decon_p1_comb_n <- scr_p1_comb_n$decontaminated_samples
 write.csv(decon_p1_comb_o, "2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv") #save each of these as CSV file to then be able to put back together
 write.csv(decon_p1_comb_n, "2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv")
 
-#decon_p1_comb_o <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
-#decon_p1_comb_n <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/SCRuB/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
+#decon_p1_comb_o <- read.csv("~/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
+#decon_p1_comb_n <- read.csv("~/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
 ```
 
 # Output post-SCRuB 

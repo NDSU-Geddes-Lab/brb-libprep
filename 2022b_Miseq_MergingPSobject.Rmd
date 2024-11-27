@@ -1,12 +1,14 @@
 ---
-title: "Merging 2022 Miseq Plate Objects Final Code"
+title: "Merging 2022 Miseq Plate Objects"
 author: "Brooke Benz"
 date: "2024-05-15"
 output:
   html_notebook: 20240515_2022b_miseq_BarleyMicrobiome_MakingPSObjects_BRB
   pdf_document: 20240515_2022b_miseq_BarleyMicrobiome_MakingPSObjects_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU
 
+## Purpose: To generate a phyloseq object using the otu and taxa tables from the DADA2 output and a metadata file.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -17,7 +19,7 @@ library(phyloseq)
 library(Biostrings)
 library(dplyr) #loading in the %>% function
 
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Merging PS Objects"
+path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Merging PS Objects"
 
 set.seed(617)
 ```
@@ -25,9 +27,9 @@ set.seed(617)
 #Loading in all files corresponding to each run/plate
 ## 2022b MiSeq
 ```{r}
-seqtab_miseq <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/DADA2/2022b_Plate1_OldNew_seqtab.nochloronomitoeuk.rds")
-taxa_miseq <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/DADA2/2022b_Plate1_OldNew_taxanochloronomitoeuk.rds")
-meta_miseq <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/2022b_MiSeq_Metadata.csv", #row.names = 1,
+seqtab_miseq <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/DADA2/2022b_Plate1_OldNew_seqtab.nochloronomitoeuk.rds")
+taxa_miseq <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/DADA2/2022b_Plate1_OldNew_taxanochloronomitoeuk.rds")
+meta_miseq <- read.csv("~/Documents/R/Final Codes/2022/2022_Miseq/2022b_MiSeq_Metadata.csv", #row.names = 1,
                  stringsAsFactors = TRUE)
 dim(meta_miseq)
 rownames(meta_miseq) <- meta_miseq$SampleID

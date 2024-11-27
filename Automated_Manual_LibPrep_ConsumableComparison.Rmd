@@ -6,7 +6,9 @@ output:
   html_notebook: 20241002_consumable_cost_manual_automated_BRB
   pdf_document: 20241002_consumable_cost_manual_automated_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU
 
+## Purpose: To compare the cost of consumables for each step between the automated and manual library preparation methods.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -17,7 +19,7 @@ library(ggplot2)
 library(tidyr)
 library(dplyr)
 
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Consumable Price Comparison"
+path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Consumable Price Comparison"
 
 set.seed(617)
 
@@ -26,7 +28,7 @@ step_color <- c("#FED789", "#023743", "#72874E", "#476F84", "#A4BED5", "#453947"
 
 ## Loading Files
 ```{r}
-price_csv <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Consumable Price Comparison/2022b_Plate1_consumablepricetracking_noafteroptimization.csv")
+price_csv <- read.csv("~/Documents/R/Final Codes/2022/2022_Miseq/Consumable Price Comparison/2022b_Plate1_consumablepricetracking_noafteroptimization.csv")
 ```
 
 ## Making Data Frame

@@ -6,7 +6,9 @@ output:
   html_notebook: 20241104_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_lineardissimilarity_BRB
   pdf_document: 20241104_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_lineardissimilarity_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU and Briana K. Whitaker USDA-ARS
 
+## Purpose: To compare the beta diversity dissimilarity means within and between treatments to determine the effect of sequencing platform and library preparation method.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -23,7 +25,7 @@ library(ggplot2); packageVersion("ggplot2")
 library(viridis); packageVersion("viridis")
 
 # setting path
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/Linear Dissimilarities"
+path <- "~/2022_Miseq/Beta Diversity/Linear Dissimilarities"
 
 group.colors <- c("#4f6980", "#b9aa97", "#b66353", "#849db1", "#a2ceaa", "#7e756d")
 
@@ -35,14 +37,14 @@ set.seed(617)
 ## Loading in Files
 ```{r}
 ## phyloseq objects
-ps_22b_p1 <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1 <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 
-ps_22b_p1_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq_rare.ps.rds")
+ps_22b_p1_rare <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq_rare.ps.rds")
 
 ## dds objects
-ddsb <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240612_2022b_p1_miseq_nextseq_dds.RData")
+ddsb <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240612_2022b_p1_miseq_nextseq_dds.RData")
 
-ddsb_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
+ddsb_rare <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
 ```
 
 ## Transform Data and Calculate Distances

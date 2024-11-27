@@ -6,7 +6,9 @@ output:
   html_notebook: 20241011_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_AlphaDiversity_BRB
   pdf_document: 20241011_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_AlphaDiversity_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU
 
+## Purpose: To compare alpha diversity metrics between library preparatoin methods through correlation.
 
 * Run using `r version[['version.string']] `.
 ---
@@ -21,7 +23,7 @@ library(ggplot2)
 library(tibble)
 
 ## Loading functions and setting path
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Alpha Diversity"
+path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Alpha Diversity"
 
 #set seed
 #runif(1, min = 0, max = 1000)
@@ -33,10 +35,10 @@ set.seed(617)
 
 ## Loading in PS Objects
 ```{r}
-ps_22b_p1 <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1 <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ps_22b_p1
 
-ps_22b_p1_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1_rare <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ps_22b_p1_rare
 ```
 
@@ -84,7 +86,7 @@ write.csv(richness_auto, "2022b_Plate1_miseq_automated_rich_shannon.csv")
 # # manually go in and check that all sample names match between manual and automated
 # # make new csv file with SampleID, manual richness and shannon and automated richness and shannon
 
-miseq_correlation <- read.csv("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_Plate1_miseq_richness_shannon.csv")
+miseq_correlation <- read.csv("~/2022b_Plate1_miseq_richness_shannon.csv")
 
 #linear regression model
 lm_rich <- lm(auto_rich ~ manual_rich, data = miseq_correlation)

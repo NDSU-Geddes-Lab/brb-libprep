@@ -6,7 +6,9 @@ output:
   html_notebook: 20240611_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_BRB
   pdf_document: 20240611_BarleyMicrobiome_2022b_Plate1_miseq_nextseq_BetaDiversity_BRB
 ---
+## Contributors for this code included Brooke R. Benz NDSU and Briana K. Whitaker USDA-ARS
 
+## Purpose: Beta diversity analysis of sequencing results before and after rarefaction comparing sequencing platform and library preparation method, and also test homogeneity of dispersions
 
 * Run using `r version[['version.string']] `.
 ---
@@ -22,17 +24,13 @@ library(ggplot2)
 library(tibble)
 
 ## Loading functions and setting path
-path <- "/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity"
+path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity"
 
 #set seed
 #runif(1, min = 0, max = 1000)
 set.seed(617)
 
 sxl_color <- c("#516888", "#C9DACA", "#F3AE6D") # colors from nationalparkcolors package
-
-
-#Load functions
-source("/Users/brookeb/Documents/R/code/multiplot.R")
 
 #add 'not in' function
 `%nin%` = Negate(`%in%`)
@@ -54,10 +52,10 @@ veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100)   
 
 ## Loading in PS Objects
 ```{r}
-ps_22b_p1 <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1 <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ps_22b_p1
 
-ps_22b_p1_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1_rare <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ps_22b_p1_rare
 ```
 
@@ -68,7 +66,7 @@ gmMeansb <- apply(counts(ddsb), 1, gm_mean_protected)
 ddsb <- estimateSizeFactors(ddsb, type = 'ratio', geoMeans = gmMeansb)
 ddsb <- estimateDispersions(ddsb, fitType = "local")
 saveRDS(ddsb, "20240612_2022b_p1_miseq_nextseq_dds.RData")
-ddsb <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240612_2022b_p1_miseq_nextseq_dds.RData")
+ddsb <- readRDS("~/20240612_2022b_p1_miseq_nextseq_dds.RData")
 
 ## VST
 vstb <- getVarianceStabilizedData(ddsb)
@@ -187,7 +185,7 @@ gmMeansb_rare <- apply(counts(ddsb_rare), 1, gm_mean_protected)
 ddsb_rare <- estimateSizeFactors(ddsb_rare, type = 'ratio', geoMeans = gmMeansb_rare)
 ddsb_rare <- estimateDispersions(ddsb_rare, fitType = "local")
 saveRDS(ddsb_rare, "20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
-ddsb_rare <- readRDS("/Users/brookeb/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
+ddsb_rare <- readRDS("~/20240613_2022b_p1_miseq_nextseq_rare_dds.RData")
 
 ## Hellinger Transformation
 ### takes square root of the sum of an asv divided by sum of all asvs
