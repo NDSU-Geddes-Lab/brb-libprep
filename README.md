@@ -6,15 +6,15 @@ Authors: Brooke R. Benz, Eglantina Lopez-Echartea, Briana K. Whitaker, Thomas Ba
 Run codes in this order:
 2022b_Nextseq_DADA2.Rmd > Runs through the DADA2 pipeline to generate ASVs and assign taxonomy to the NextSeq results.
 
-2022b_Nextseq_SCRuB.Rmd > Removes contaminants using the positive and negative controls to statistically estimate the contaminating sequences.
-
 2022b_Nextseq_MergingPSobject.Rmd > Makes the phyloseq object for the NextSeq samples by using the otu table and taxa table from DADA2.
+
+2022b_Nextseq_SCRuB.Rmd > Removes contaminants using the positive and negative controls to statistically estimate the contaminating sequences.
 
 2022b_Miseq_DADA2.Rmd > Runs through the DADA2 pipeline to generate ASVs and assign taxonomy to the MiSeq results.
 
-2022b_Miseq_SCRuB.Rmd > Removes contaminants using the positive and negative controls to statistically estimate the contaminating sequences.
-
 2022b_Miseq_MergingPSobject.Rmd > Makes the phyloseq object for the MiSeq samples by using the otu table and taxa table from DADA2.
+
+2022b_Miseq_SCRuB.Rmd > Removes contaminants using the positive and negative controls to statistically estimate the contaminating sequences.
 
 2022b_Miseq_Nextseq_MergingPSobjects.Rmd > Merges the MiSeq and NextSeq phyloseq objects for further analysis.
 

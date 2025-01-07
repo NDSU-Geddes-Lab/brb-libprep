@@ -15,9 +15,8 @@ output:
 
 ## Loading Packages
 ```{r}
-library(ggplot2)
-library(tidyr)
-library(dplyr)
+x<-c("tidyr", "dplyr", "ggplot2")  
+lapply(x, require, character.only = TRUE)
 
 path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Consumable Price Comparison"
 

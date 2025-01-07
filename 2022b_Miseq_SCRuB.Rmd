@@ -66,7 +66,7 @@ metadata_22b_ms
 ```{r}
 sample_data(ps_22b_ms) <- metadata_22b_ms
 
-write.csv(metadata_22b_ms, file = "2022b_miseq_SCRuBmetadata.csv", row.names = FALSE)
+write.csv(metadata_22b_ms, file.path(path,"2022b_miseq_SCRuBmetadata.csv"), row.names = FALSE)
 ```
 
 ## Phase1 SCRuB - PCR Neg Ctrl
@@ -98,7 +98,7 @@ rownames(mat_p1_n) %in% rownames(meta_p1_n) #96
 ### Run SCRuB
 * Running SCRuB with spatial (well location) information. Done by plate.
 ```{r}
-#scrub DNA plates (individually) by DNA extraction controls
+#scrub DNA plates (individually) by PCR negative controls
 scr_p1_o <- SCRuB(mat_p1_o, meta_p1_o, c("PCR-Neg-Ctrl") )
 scr_p1_n <- SCRuB(mat_p1_n, meta_p1_n, c("PCR-Neg-Ctrl") ) 
 ```
@@ -154,8 +154,8 @@ scr_p1_n$inner_iterations$`PCR-Neg-Ctrl`$alpha[, ncol(scr_p1_n$inner_iterations$
 ```{r}
 decon_p1_o <- scr_p1_o$decontaminated_samples
 decon_p1_n <- scr_p1_n$decontaminated_samples
-write.csv(decon_p1_o, "2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv") #save each of these as CSV file to then be able to put back together
-write.csv(decon_p1_n, "2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv")
+write.csv(decon_p1_o, file.path(path,"2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv")) #save each of these as CSV file to then be able to put back together
+write.csv(decon_p1_n, file.path(path,"2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv"))
 
 #decon_p1_o <- read.csv("~/2022b_miseq_ScrubDecontaminatedSamples_p1_oldlibprep_pcr.csv", row.names = 1) %>% as.matrix()
 #decon_p2_n <- read.csv("~/2022b_miseq_ScrubDecontaminatedSamples_p1_newlibprep_pcr.csv", row.names = 1) %>% as.matrix()
@@ -221,8 +221,8 @@ scr_p1_ex_n$inner_iterations$`Ex-Neg-Ctrl`$alpha[, ncol(scr_p1_ex_n$inner_iterat
 ```{r}
 decon_p1_ex_o <- scr_p1_ex_o$decontaminated_samples
 decon_p1_ex_n <- scr_p1_ex_n$decontaminated_samples
-write.csv(decon_p1_ex_o, "2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv") #save each of these as CSV file to then be able to put back together
-write.csv(decon_p1_ex_n, "2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv")
+write.csv(decon_p1_ex_o, file.path(path,"2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv")) #save each of these as CSV file to then be able to put back together
+write.csv(decon_p1_ex_n, file.path(path,"2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv"))
 
 #decon_p1_ex_o <- read.csv("~/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
 #decon_p1_ex_n <- read.csv("~/2022b_miseq_ExNegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
@@ -428,8 +428,8 @@ scr_p1_comb_n$inner_iterations$`PCR-Neg-Ctrl`$alpha[, ncol(scr_p1_comb_n$inner_i
 ```{r}
 decon_p1_comb_o <- scr_p1_comb_o$decontaminated_samples
 decon_p1_comb_n <- scr_p1_comb_n$decontaminated_samples
-write.csv(decon_p1_comb_o, "2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv") #save each of these as CSV file to then be able to put back together
-write.csv(decon_p1_comb_n, "2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv")
+write.csv(decon_p1_comb_o, file.path(path,"2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv")) #save each of these as CSV file to then be able to put back together
+write.csv(decon_p1_comb_n, file.path(path,"2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv"))
 
 #decon_p1_comb_o <- read.csv("~/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_oldlibprep.csv", row.names = 1) %>% as.matrix()
 #decon_p1_comb_n <- read.csv("~/2022b_miseq_comb_NegCtrl_ScrubDecontaminatedSamples_p1_newlibprep.csv", row.names = 1) %>% as.matrix()
@@ -516,8 +516,8 @@ saveRDS(ps_22b_scrub,file.path(path,"2022b_miseq.ps.rds"))
 scrub_meta <- (as(sample_data(ps_22b_scrub), "data.frame"))
 scrub_taxa <- (as(otu_table(ps_22b_scrub), "matrix"))
 # # write out data
-write.csv(scrub_meta, "2022b_miseq_metadata_postSCRuB_comb.csv")
-write.csv(scrub_taxa, "2022b_miseq_taxatable_postSCRuB_nextseq_comb.csv")
+write.csv(scrub_meta, file.path(path,"2022b_miseq_metadata_postSCRuB_comb.csv"))
+write.csv(scrub_taxa, file.path(path,"2022b_miseq_taxatable_postSCRuB_nextseq_comb.csv"))
 ```
 
 ```{r}

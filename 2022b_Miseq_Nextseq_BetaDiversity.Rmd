@@ -15,13 +15,10 @@ output:
 
 ```{r}
 ##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
-library(phyloseq); packageVersion("phyloseq") #1.38.0
-library(viridis)
-library(vegan); packageVersion("vegan") #2.6.4
-library("DESeq2")
-library(dplyr)
-library(ggplot2)
-library(tibble)
+x<-c("phyloseq", "vegan", "dplyr", "ggplot2", "tibble", "DESeq2", "viridis")  
+lapply(x, require, character.only = TRUE)
+packageVersion("phyloseq") #1.38.0
+packageVersion("vegan") #2.6.4
 
 ## Loading functions and setting path
 path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity"
@@ -55,17 +52,19 @@ veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100)   
 ps_22b_p1 <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ps_22b_p1
 
-ps_22b_p1_rare <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
+ps_22b_p1_rare <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq_rare.ps.rds")
 ps_22b_p1_rare
 ```
 
 ```{r}
+data_b <- (as(sample_data(ps_22b_p1), "data.frame"))
+
 # # DESeq2
 ddsb <- phyloseq_to_deseq2(ps_22b_p1, ~ 1)
 gmMeansb <- apply(counts(ddsb), 1, gm_mean_protected)
 ddsb <- estimateSizeFactors(ddsb, type = 'ratio', geoMeans = gmMeansb)
 ddsb <- estimateDispersions(ddsb, fitType = "local")
-saveRDS(ddsb, "20240612_2022b_p1_miseq_nextseq_dds.RData")
+saveRDS(ddsb, file.path(path, "20240612_2022b_p1_miseq_nextseq_dds.RData"))
 ddsb <- readRDS("~/20240612_2022b_p1_miseq_nextseq_dds.RData")
 
 ## VST
@@ -76,7 +75,7 @@ vstb <- t(vstb)  #taxa as columns
 dist.vstb <- vegdist(vstb, method="euclidean")
 # Save the data frame as a CSV file
 dist.vstb_df <- as.data.frame(as.matrix(dist.vstb))
-write.csv(dist.vstb_df, "2022b_plate1_distance_matrix.csv", row.names = TRUE)
+write.csv(dist.vstb_df, file.path(path, "2022b_plate1_distance_matrix.csv"), row.names = TRUE)
 
 pcoa_b <- cmdscale(dist.vstb, eig =TRUE)
 
@@ -104,6 +103,15 @@ legend("topright", legend=c("Avg. Eigenvalue", "Broken Stick"), lty=c(2,4), bty=
 
 ## 2022b Plate1 by Sequencing Platform and Lib Prep Method
 ```{r}
+# create dataframes for use in plots
+PCoAscoresb <- as.data.frame(pcoa_b$points)
+PCoAscoresb$ids <- rownames(PCoAscoresb) 
+#merge the temporary and SbyE dataframes
+pcoa.datb <- merge(PCoAscoresb, data_b, by.x="ids",
+                  by.y="SampleID")
+rownames(pcoa.datb) <- as.character(pcoa.datb$ids)
+str(pcoa.datb)
+
 ellipses.sxl <- data.frame() 
 #loop, 
 #change pcoa.dat$____ to your var name, and same for =g at end

@@ -15,14 +15,11 @@ output:
 
 ```{r}
 ##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
-library(devtools)
-library("metagMisc"); packageVersion("metagMisc") # 0.5.0
-library(phyloseq); packageVersion("phyloseq") #1.38.0
-library(vegan); packageVersion("vegan") #2.6.4
-library("DESeq2"); packageVersion("DESeq2")
-library(dplyr); packageVersion("dplyr")
-library(ggplot2); packageVersion("ggplot2")
-library(viridis); packageVersion("viridis")
+x<-c("phyloseq", "vegan", "plyr", "dplyr", "ggplot2", "devtools", "DESeq2", "viridis", "metagMisc")
+lapply(x, require, character.only = TRUE)
+packageVersion("phyloseq") #1.38.0
+packageVersion("vegan") #2.6.4
+packageVersion("metagMisc") # 0.5.0
 
 # setting path
 path <- "~/2022_Miseq/Beta Diversity/Linear Dissimilarities"
@@ -74,7 +71,9 @@ htb.dist.df <- dist2list(dist.rare, tri=TRUE)
 ## Beta Diversity Dissimilarities
 ### Non-Rarefied
 ```{r}
-distanceMethodList
+# use to determine which distances are supported by phyloseq and metagMisc
+  # both euclidean and bray are supported
+#distanceMethodList
 
 diss.euc <- phyloseq_group_dissimilarity(
   ps_22b_p1,

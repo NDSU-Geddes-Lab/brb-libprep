@@ -15,13 +15,10 @@ output:
 
 ```{r}
 ##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
-library(phyloseq); packageVersion("phyloseq") #1.38.0
-library(viridis)
-library(vegan); packageVersion("vegan") #2.6.4
-library("DESeq2")
-library(dplyr)
-library(ggplot2)
-library(tibble)
+x<-c("phyloseq", "viridis", "vegan", "DESeq2", "dplyr", "ggplot2", "tibble")  
+lapply(x, require, character.only = TRUE)
+packageVersion("phyloseq") #1.48.0
+packageVersion("vegan") #2.6.6.1
 
 ## Loading functions and setting path
 path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity"
@@ -49,7 +46,7 @@ ps_22b_ns_p1
 # # extract sample data of ps object want to change names so they are in exact order
 meta <- sample_data(ps_22b_ms)
 # # manually change sample data name - changed both rowname and SampleID columns
-write.csv(meta, "ps_22b_ms_SampleData.csv")
+write.csv(meta, file.path(path,"ps_22b_ms_SampleData.csv"))
 # # load back into R as an object
 new_sample_names <- read.csv("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/ps_22b_ms_SampleData.csv")
 
@@ -78,7 +75,7 @@ sample_names(ps_22b_ms_upd)
 # #extract sample data of ps object want to change names so they are in exact order
 meta2 <- sample_data(ps_22b_ns_p1)
 # # manually change sample data name - deleted X column
-write.csv(meta2, "ps_22b_ns_p1_SampleData.csv")
+write.csv(meta2, file.path(path,"ps_22b_ns_p1_SampleData.csv"))
 # # load back into R as an object
 new_sample_names2 <- read.csv("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/ps_22b_ns_p1_SampleData.csv")
 
@@ -102,8 +99,7 @@ data_b$SxL <- as.factor(paste(data_b$SequencingPlatform, data_b$SxL, sep = "_"))
 # # For some reason, updating the sample_names changes the structure of the data frame
 # # removes factor levels of each column
 # # Identify the columns that should be factors
-str(data_b_ms)
-str(data_b_ms_upd)
+str(data_b)
 # # need to make these factors again
 factor_columns <- c("SampleID", "SampleName", "sample_well", "HeadRep", "Line", "Genotype", "DiseaseStatus.y", "Location", "SampleNumber", "sample_type", "duplicate", "original_plate", "SequencingRun", "SequencingPlatform", "SxL")
 # # Convert these columns to factors
@@ -121,9 +117,8 @@ total_reads <- colSums(otu_table)
 data_b$total_reads <- total_reads
 sample_data(ps_22b_p1_upd) <- data_b
 sample_data(ps_22b_p1_upd)
-saveRDS(ps_22b_p1_upd, "2022b_p1_miseq_nextseq.ps.rds")
-ps_22b_p1_upd <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
-data_b <- (as(sample_data(ps_22b_p1_upd), "data.frame"))
+saveRDS(ps_22b_p1_upd, file.path(path,"2022b_p1_miseq_nextseq.ps.rds"))
+#ps_22b_p1_upd <- readRDS("~/Documents/R/Final Codes/2022/2022_Miseq/Beta Diversity/2022b_p1_miseq_nextseq.ps.rds")
 ```
 
 ```{r}

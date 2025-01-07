@@ -15,14 +15,10 @@ output:
 
 ```{r}
 ##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
-library(phyloseq); packageVersion("phyloseq") #1.38.0
-library(vegan); packageVersion("vegan") #2.6.4
-library(dplyr)
-library(ggplot2)
-library(tibble)
-#install.packages("moments")
-library(moments)
-library(scales)
+x<-c("phyloseq", "vegan", "dplyr", "ggplot2", "tibble", "moments", "scales")  
+lapply(x, require, character.only = TRUE)
+packageVersion("phyloseq") #1.48.0
+packageVersion("vegan") #2.6.6.1
 
 ## Loading functions and setting path
 path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Rarefaction Curves"
@@ -76,6 +72,7 @@ summary_stats <- summary_stats %>%
   mutate(label = paste0("Mean: ", scientific(Mean, digits = 2), 
                         "\nVariance: ", scientific(Variance, digits = 2),
                         "\nSkewness: ", round(Skewness, 2)))
+summary_stats
 
 # Merge the summary_stats back with the read_depth_df for plotting
 read_depth_df <- read_depth_df %>%
@@ -126,6 +123,7 @@ summary_stats <- summary_stats %>%
   mutate(label = paste0("Mean: ", scientific(Mean, digits = 2), 
                         "\nVariance: ", scientific(Variance, digits = 2),
                         "\nSkewness: ", round(Skewness, 2)))
+summary_stats
 
 # Merge the summary_stats back with the read_depth_df for plotting
 read_depth_df_miseq <- read_depth_df_miseq %>%

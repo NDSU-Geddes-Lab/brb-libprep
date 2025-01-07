@@ -14,13 +14,11 @@ output:
 ---
 
 ```{r}
-library(phyloseq); packageVersion("phyloseq") #1.38.0
-library(viridis)
-library(vegan); packageVersion("vegan") #2.6.4
-library("DESeq2")
-library(dplyr)
-library(ggplot2)
-library(tibble)
+##PACKAGES ONLY NECESSARY FOR THIS SCRIPT
+x<-c("phyloseq", "vegan", "dplyr", "ggplot2", "DESeq2", "viridis", "tibble", "ggpubr")  
+lapply(x, require, character.only = TRUE)
+packageVersion("phyloseq") #1.48.0
+packageVersion("vegan") #2.6.6.1
 
 ## Loading functions and setting path
 path <- "~/Documents/R/Final Codes/2022/2022_Miseq/Alpha Diversity"
@@ -81,8 +79,8 @@ richness_manual <- manual[, c("SampleID", "Rich", "Shannon")]
 auto <- subset(data_b, SxL == "MiSeq_New")
 richness_auto <- auto[, c("SampleID", "Rich", "Shannon")]
 # # write csvs
-write.csv(richness_manual, "2022b_Plate1_miseq_manual_rich_shannon.csv")
-write.csv(richness_auto, "2022b_Plate1_miseq_automated_rich_shannon.csv")
+write.csv(richness_manual, file.path(path, "2022b_Plate1_miseq_manual_rich_shannon.csv"))
+write.csv(richness_auto, file.path(path, "2022b_Plate1_miseq_automated_rich_shannon.csv"))
 # # manually go in and check that all sample names match between manual and automated
 # # make new csv file with SampleID, manual richness and shannon and automated richness and shannon
 
@@ -127,7 +125,7 @@ ggplot(miseq_correlation, aes(x = manual_shannon, y = auto_shannon)) +
                         color = "black", label.x.npc = 0.95,
                         label.y.npc = 0.95, hjust = 1) +
   geom_smooth(method = 'lm', formula = y ~ x, se = TRUE, linewidth = 0.5, color = "black") +
-  labs(x = "MiSeq Manual Richness", y = "MiSeq Automated Richness",
+  labs(x = "MiSeq Manual Shannon", y = "MiSeq Automated Shannon",
        title = "Correlation of Shannon Between Library Prep Method") +
   theme_minimal()
 
